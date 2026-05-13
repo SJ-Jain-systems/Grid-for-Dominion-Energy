@@ -1,0 +1,14 @@
+[
+  {"id":"VA-0001","county":"Fairfax","income":128000,"energyBurden":2.1,"peak57":9.2,"homeAge":18,"ev":1,"smartThermostat":1,"outageRisk":0.22,"engagement":0.64},
+  {"id":"VA-0002","county":"Richmond City","income":48000,"energyBurden":9.4,"peak57":8.7,"homeAge":54,"ev":0,"smartThermostat":0,"outageRisk":0.37,"engagement":0.42},
+  {"id":"VA-0003","county":"Virginia Beach","income":76000,"energyBurden":5.8,"peak57":10.1,"homeAge":31,"ev":0,"smartThermostat":0,"outageRisk":0.41,"engagement":0.57},
+  {"id":"VA-0004","county":"Prince William","income":98000,"energyBurden":4.2,"peak57":11.6,"homeAge":22,"ev":1,"smartThermostat":0,"outageRisk":0.28,"engagement":0.63},
+  {"id":"VA-0005","county":"Norfolk","income":52000,"energyBurden":8.6,"peak57":9.9,"homeAge":47,"ev":0,"smartThermostat":0,"outageRisk":0.52,"engagement":0.39},
+  {"id":"VA-0006","county":"Chesterfield","income":87000,"energyBurden":4.7,"peak57":8.2,"homeAge":26,"ev":0,"smartThermostat":1,"outageRisk":0.26,"engagement":0.58},
+  {"id":"VA-0007","county":"Henrico","income":93000,"energyBurden":3.8,"peak57":7.4,"homeAge":24,"ev":0,"smartThermostat":1,"outageRisk":0.21,"engagement":0.61},
+  {"id":"VA-0008","county":"Alexandria","income":142000,"energyBurden":1.9,"peak57":7.2,"homeAge":16,"ev":1,"smartThermostat":1,"outageRisk":0.18,"engagement":0.66},
+  {"id":"VA-0009","county":"Roanoke","income":61000,"energyBurden":6.9,"peak57":8.6,"homeAge":40,"ev":0,"smartThermostat":0,"outageRisk":0.36,"engagement":0.46},
+  {"id":"VA-0010","county":"Loudoun","income":165000,"energyBurden":1.6,"peak57":9.8,"homeAge":14,"ev":1,"smartThermostat":1,"outageRisk":0.19,"engagement":0.69},
+  {"id":"VA-0011","county":"Arlington","income":150000,"energyBurden":1.8,"peak57":7.0,"homeAge":20,"ev":1,"smartThermostat":1,"outageRisk":0.16,"engagement":0.71},
+  {"id":"VA-0012","county":"Newport News","income":57000,"energyBurden":7.8,"peak57":10.4,"homeAge":43,"ev":0,"smartThermostat":0,"outageRisk":0.48,"engagement":0.41}
+]
