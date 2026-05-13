@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DER Compass for Dominion Energy</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>DER Compass</h1>
+    <p>Dominion utility decision dashboard</p>
+  </header>
+
+  <main>
+    <section class="panel intro">
+      <h2>Answer these six questions quickly</h2>
+      <ol>
+        <li>Who benefits most from DER programs?</li>
+        <li>What technology fits each household best?</li>
+        <li>When should Dominion reach them?</li>
+        <li>What message converts best?</li>
+        <li>What financing makes upgrades affordable?</li>
+        <li>What incentive reduces adoption barriers?</li>
+      </ol>
+      <div class="controls">
+        <label>Thermostat Rebate ($)<input id="rebate" type="number" value="50" step="5" /></label>
+        <button id="runBtn">Refresh Recommendations</button>
+      </div>
+    </section>
+
+    <section class="panel"><h2>Virginia Program Snapshot (preloaded asset)</h2><div id="kpis" class="kpis"></div></section>
+
+    <section class="panel">
+      <h2>Priority Households for Dominion</h2>
+      <table>
+        <thead><tr><th>Rank</th><th>ID</th><th>County</th><th>Best DER</th><th>Adoption %</th><th>Impact/$</th><th>When</th><th>Message</th><th>Financing</th><th>Incentive</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </section>
+
+    <section class="panel"><h2>Household Detail</h2><div id="detail">Click any household row.</div></section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
