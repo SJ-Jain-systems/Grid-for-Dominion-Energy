@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DER Compass MVP</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>DER Compass</h1>
+    <p>Find the right household, right technology, right incentive, and right message.</p>
+    <div class="cards">
+      <div class="card">Target better</div>
+      <div class="card">Incentivize smarter</div>
+      <div class="card">Reduce household friction</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel controls">
+      <h2>Data Upload / Dataset Selector</h2>
+      <div class="row">
+        <label>Dataset
+          <select id="datasetSelect"><option value="2024">Synthetic 2024 baseline</option><option value="2026">Synthetic 2026 scenario</option></select>
+        </label>
+        <label>Upload CSV
+          <input id="csvUpload" type="file" accept=".csv" />
+        </label>
+        <label>Total Incentive Budget ($)<input id="budget" type="number" value="500000" min="10000" step="10000" /></label>
+        <label>Smart Thermostat Rebate ($)<input id="thermostatRebate" type="number" value="50" min="0" step="5" /></label>
+        <label>Financing Type
+          <select id="financingType"><option>Instant rebate</option><option>Bill financing</option><option>No-upfront-cost install</option></select>
+        </label>
+        <label>Outreach Message
+          <select id="outreachTone"><option>Bill savings</option><option>Automation</option><option>Resilience</option></select>
+        </label>
+        <button id="runBtn">Run Scoring</button>
+      </div>
+    </section>
+
+    <section class="panel kpis"><h2>Executive Dashboard</h2><div id="kpiGrid" class="kpi-grid"></div></section>
+
+    <section class="panel filters">
+      <h2>Filters</h2>
+      <div class="row">
+        <label>Income band<select id="incomeFilter"><option value="all">All</option><option value="low">Low (&lt;$60k)</option><option value="mid">Mid ($60k-$120k)</option><option value="high">High (&gt;$120k)</option></select></label>
+        <label>DER type<select id="derFilter"><option value="all">All</option><option>Smart Thermostat</option><option>Smart Water Heater</option><option>Managed EV Charging</option><option>Weatherization Bundle</option><option>Battery + Smart Panel</option></select></label>
+        <label>Min adoption %<input id="minAdoption" type="number" value="0" min="0" max="100"/></label>
+      </div>
+    </section>
+
+    <section class="panel table-panel">
+      <h2>Household Ranking Table</h2>
+      <table><thead><tr><th>Rank</th><th>Household ID</th><th>Segment</th><th>Best DER</th><th>Adoption %</th><th>Grid Value</th><th>Welfare Score</th><th>Impact/$</th><th>Incentive</th><th>Message</th><th>When to Contact</th></tr></thead><tbody id="rows"></tbody></table>
+    </section>
+
+    <section class="panel two-col">
+      <div>
+        <h2>Household Detail</h2>
+        <div id="detailCard">Click a household row to view recommendation details.</div>
+      </div>
+      <div>
+        <h2>Campaign Builder + Scenario Simulator</h2>
+        <div id="scenarioCard">Run scoring to generate campaign output.</div>
+      </div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
