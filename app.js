@@ -32,18 +32,19 @@ function filters(rows){
 function render(){
   const scored=households.map(recommend).sort((a,b)=>b.priority-a.priority);
   const rows=filters(scored);
-  const high=rows.filter(r=>r.priority>rows[0]?.priority*0.7).length;
-  const avgBurden=rows.reduce((s,r)=>s+r.energyBurden,0)/Math.max(rows.length,1);
-  const peakRed=rows.reduce((s,r)=>s+r.peak57*0.09,0);
-  const annualSave=rows.reduce((s,r)=>s+r.welfare*12*0.05,0);
-  const segment=rows[0]?.tech||'n/a';
-  const kpis=[['Households analyzed',rows.length],['High-priority households',high],['Average energy burden',`${avgBurden.toFixed(1)}%`],['Projected peak reduction',`${peakRed.toFixed(1)} MW`],['Estimated annual savings',`$${Math.round(annualSave).toLocaleString()}`],['Highest-value segment',segment]];
+  const topRows=rows.slice(0,25);
+  const high=topRows.filter(r=>r.priority>topRows[0]?.priority*0.7).length;
+  const avgBurden=topRows.reduce((s,r)=>s+r.energyBurden,0)/Math.max(topRows.length,1);
+  const peakRed=topRows.reduce((s,r)=>s+r.peak57*0.09,0);
+  const annualSave=topRows.reduce((s,r)=>s+r.welfare*12*0.05,0);
+  const segment=topRows[0]?.tech||'n/a';
+  const kpis=[['Households analyzed',rows.length],['Shown in table',topRows.length],['High-priority households',high],['Average energy burden',`${avgBurden.toFixed(1)}%`],['Projected peak reduction',`${peakRed.toFixed(1)} MW`],['Estimated annual savings',`$${Math.round(annualSave).toLocaleString()}`],['Highest-value segment',segment]];
   document.getElementById('kpiCards').innerHTML=kpis.map(([k,v])=>`<div class='card'>${k}<b>${v}</b></div>`).join('');
 
-  document.getElementById('rows').innerHTML=rows.map(r=>`<tr data-id='${r.id}'><td>${r.id}</td><td>${r.county}</td><td>${r.priority.toFixed(2)}</td><td>${r.tech}</td><td>${r.msg}</td><td>${r.financing}</td><td>${r.incentive}</td><td>${r.when}</td><td>${r.why}</td></tr>`).join('');
-  document.querySelectorAll('#rows tr').forEach(tr=>tr.onclick=()=>{const r=rows.find(x=>x.id===tr.dataset.id); document.getElementById('detail').innerHTML=`<b>${r.id} · ${r.county}</b><br/>Who they are: income $${r.income.toLocaleString()}, burden ${r.energyBurden}%<br/>Why priority: ${r.why}<br/>Best-fit DER: ${r.tech}<br/>Best message: ${r.msg}<br/>Best financing: ${r.financing}<br/>Best incentive: ${r.incentive}<br/>Right moment: ${r.when}`;});
+  document.getElementById('rows').innerHTML=topRows.map(r=>`<tr data-id='${r.id}'><td>${r.id}</td><td>${r.county}</td><td>${r.priority.toFixed(2)}</td><td>${r.tech}</td><td>${r.msg}</td><td>${r.financing}</td><td>${r.incentive}</td><td>${r.when}</td><td>${r.why}</td></tr>`).join('');
+  document.querySelectorAll('#rows tr').forEach(tr=>tr.onclick=()=>{const r=topRows.find(x=>x.id===tr.dataset.id); document.getElementById('detail').innerHTML=`<b>${r.id} · ${r.county}</b><br/>Who they are: income $${r.income.toLocaleString()}, burden ${r.energyBurden}%<br/>Why priority: ${r.why}<br/>Best-fit DER: ${r.tech}<br/>Best message: ${r.msg}<br/>Best financing: ${r.financing}<br/>Best incentive: ${r.incentive}<br/>Right moment: ${r.when}`;});
 
-  const top = rows.slice(0,Math.max(1,Math.floor(rows.length/3)));
+  const top = topRows.slice(0,Math.max(1,Math.floor(topRows.length/3)));
   const insight = [
     ['Who benefits most?', `${top.filter(r=>r.energyBurden>7).length} high-burden households in top tier.`],
     ['What technology fits best?', `${mode(top.map(r=>r.tech))||'Smart Thermostat'} is most frequent.`],
@@ -54,7 +55,7 @@ function render(){
   ];
   document.getElementById('insights').innerHTML=insight.map(([k,v])=>`<div class='insight'><b>${k}</b><div>${v}</div></div>`).join('');
 
-  const geo = groupBy(rows,'county').map(([county,list])=>`<div class='geo-card'><b>${county}</b><div>${list.length} households</div><div>Avg priority: ${(list.reduce((s,r)=>s+r.priority,0)/list.length).toFixed(2)}</div></div>`).join('');
+  const geo = groupBy(topRows,'county').map(([county,list])=>`<div class='geo-card'><b>${county}</b><div>${list.length} households</div><div>Avg priority: ${(list.reduce((s,r)=>s+r.priority,0)/list.length).toFixed(2)}</div></div>`).join('');
   document.getElementById('geo').innerHTML=geo;
 }
 
