@@ -1,1 +1,67 @@
-hi 
+DER Compass Proposal Package
+
+Concept Summary (250 words)
+DER Compass is a B2B SaaS decision-intelligence platform for utilities that increases distributed energy resource (DER) adoption by reducing customer decision friction, not just raising awareness. Many utilities already offer rebates, peak-time credits, EV programs, and smart device incentives, yet participation remains below potential because households face complex choices: which technology fits, what savings are realistic, how financing works, and how to complete installation. DER Compass addresses this conversion gap using continuous data inputs (utility usage, weather, household proxies, energy burden, financing acceptance, DER readiness, and program engagement signals) to generate household-level recommendations.
+
+The platform answers six operational questions: who is likely to adopt, what they are likely to adopt, when they are likely to adopt, which message converts, which financing structure converts, and which incentives matter most. Its differentiator is a Marginal Utility / Impact Score that ranks households by adoption probability and welfare-weighted impact per incentive dollar. This incorporates diminishing marginal utility of income, so the same bill reduction can be prioritized differently based on household energy burden.
+
+The product includes a utility dashboard, segmentation engine, DER recommendation layer, campaign builder, and scenario simulator comparing 2024 baseline vs. 2026 planning datasets (excluding COVID-distortion assumptions and not relying on geopolitical shock assumptions such as an Iran war scenario). Utilities can test incentive levels, messages, financing models, and target segments before launch, then deploy higher-conversion campaigns with measurable grid outcomes: peak reduction, participation lift, affordability gains, and better incentive ROI.
+
+Expected Product (Deliverables)
+- Web app MVP (DER Compass) deployed on Vercel.
+- Synthetic 2024 baseline dataset and synthetic 2026 scenario dataset.
+- Continuous-ingestion scoring pipeline (batch refresh + API-ready structure).
+- Core modules:
+  1) Data upload/dataset selector
+  2) Household segmentation dashboard
+  3) Household ranking table
+  4) Household detail explainer page
+  5) Campaign builder
+  6) Scenario simulator
+- Transparent scoring framework:
+  - Adoption Probability
+  - Grid Value
+  - Household Welfare Score
+  - Impact-per-Dollar / Marginal Utility Score
+- Exportable outputs for utility teams (CSV/PDF summaries).
+- 10-15 slide PPT pitch deck template.
+- Proposal/write-up template for Solutions Lab submission.
+
+Iterative Website Process Write-Up
+Iteration 1: Problem Framing and Workflow Validation
+- Validate hypothesis: low DER adoption is primarily a friction and complexity problem.
+- Interview utility program stakeholders; map existing outreach funnel and drop-off points.
+- Define conversion KPIs (enrollment rate, incentive efficiency, peak reduction).
+
+Iteration 2: Data and Scoring Foundations
+- Build synthetic datasets for 2024 and 2026 planning scenarios.
+- Implement explainable scoring logic (rule-based + weighted model).
+- Calibrate segment definitions and DER fit rules.
+
+Iteration 3: Decision UX and Explainability
+- Build dashboard, ranking table, and household detail page.
+- Add “why this recommendation” explanations for trust and defensibility.
+- Add message + financing recommendation layer tied to segment behavior.
+
+Iteration 4: Campaign and Scenario Intelligence
+- Add campaign builder and simulator to test incentive, message, and financing combinations.
+- Report projected adoption, grid value, and welfare-weighted impact.
+
+Iteration 5: Pilot Readiness
+- Hardening for pilot workflows, data governance, and utility reporting.
+- Prepare implementation playbook and success metrics for partner pilots.
+
+Why Our Team Can Deliver (150 words)
+Our team is well positioned to execute this project within the Solutions Lab structure because we combine product strategy, data modeling, and utility-program design in one workflow. We have already translated the core market insight into a concrete MVP scope: the barrier is not awareness alone, but household decision friction across technology choice, financing, and incentives. Technically, we can deliver quickly using a pragmatic architecture (Next.js + dashboard analytics + transparent scoring logic) that prioritizes explainability over black-box complexity for early pilots. We also have a clear phased plan with concrete milestones, including model completion and outreach by May 18, enabling rapid feedback loops with mentors, past winners, and potential utility stakeholders. Most importantly, we are building for utility operators, not just end consumers: every feature maps to operational decisions utilities already make (targeting, incentive design, campaign planning, and equity impact), making the solution both feasible and immediately testable.
+
+Supporting Materials
+- PPT template sections:
+  1) Problem and market failure (friction vs. awareness)
+  2) Product walkthrough
+  3) Model logic and marginal utility differentiator
+  4) Pilot impact metrics
+  5) Implementation roadmap
+- One-page architecture diagram.
+- Sample synthetic dataset schema.
+- Sample campaign simulation screenshots.
+- Outreach list and interview guide for past winners (target date: May 18).
