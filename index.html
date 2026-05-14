@@ -22,7 +22,6 @@
       <p><b>GRID</b> assumes the larger barrier is decision friction: uncertainty about fit, financing, timing, savings, and installation.</p>
     </section>
 
-    <section class="cards" id="kpiCards"></section>
 
     <section class="panel filters">
       <label>County <select id="countyFilter"><option value="all">All</option></select></label>
@@ -41,8 +40,8 @@
 
 
     <section class="panel">
-      <h2>Main Recommendations</h2>
-      <table>
+      <h2>Main Recommendations (Top 100 by score)</h2>
+      <table class="recommendations-table">
         <thead><tr><th>Household</th><th>County</th><th>Priority Score</th><th>Best-fit Tech</th><th>Best Message</th><th>Best Financing</th><th>Best Incentive</th><th>Best Time to Contact</th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
@@ -50,12 +49,6 @@
 
     <section class="panel"><h2>Household Explanation</h2><div id="detail">Select a household to see an executive explanation.</div></section>
 
-    <section class="panel">
-      <h2>Virginia Vulnerability Map (County-level)</h2>
-      <div class="legend"><span class="dot low"></span> Lower vulnerability <span class="dot med"></span> Medium <span class="dot high"></span> Highest vulnerability</div>
-      <svg id="vaMap" viewBox="0 0 900 360" class="va-map"></svg>
-      <div id="geo" class="geo"></div>
-    </section>
   </main>
 
   <script src="app.js"></script>
