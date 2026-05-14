@@ -13,6 +13,10 @@ const rowsEl=document.getElementById('rows');
 const detail=document.getElementById('detail');
 const kpiCards=document.getElementById('kpiCards');
 
+const countyMap=document.getElementById('countyMap');
+const countyDetail=document.getElementById('countyDetail');
+const countyPos={Roanoke:[110,180],Loudoun:[330,90],Fairfax:[390,110],'Prince William':[360,135],Arlington:[410,95],Alexandria:[430,105],'Richmond City':[520,170],Henrico:[500,165],Chesterfield:[505,195],'Newport News':[700,195],Norfolk:[745,215],'Virginia Beach':[790,225]};
+
 function recommend(h){
   const adoption=clamp(0.2*clamp((h.income-30000)/170000,0,1)+0.2*clamp(h.peak57/12,0,1)+0.15*h.engagement+0.1*(h.ev?0.95:0.6)+0.1*(1-h.smartThermostat*0.2)+0.1*h.financingAcceptance+0.15*h.solarSuitability,0,1);
   const gridValue=h.peak57*(1+h.outageRisk*0.35)*(h.ev?1.2:1)*(1+h.applianceAge/25);
@@ -33,6 +37,50 @@ function recommend(h){
 function getPriorityKey(){const s=strategyFilter.value;return s==='grid'?'gridPriority':s==='affordability'?'affordabilityPriority':'adoptionPriority';}
 function filters(rows){const county=countyFilter.value,income=incomeFilter.value,der=derFilter.value,goal=goalFilter.value,min=+minAdoption.value/100;return rows.filter(r=>(county==='all'||r.county===county)&&(income==='all'||(income==='very-low'&&r.income<40000)||(income==='low'&&r.income>=40000&&r.income<80000)||(income==='mid'&&r.income>=80000&&r.income<=120000)||(income==='upper-mid'&&r.income>120000&&r.income<=180000)||(income==='high'&&r.income>180000))&&(der==='all'||r.tech===der)&&(goal==='all'||(goal==='bill'&&r.msg==='Bill savings')||(goal==='automation'&&r.msg==='Automation & convenience')||(goal==='resilience'&&r.msg==='Resilience & outage protection'))&&r.adoption>=min);}
 
+
+function countyInitiative(topTech){
+  return ({
+    'Managed EV Charging':'Expand off-peak charging enrollment and TOU incentives for EV owners.',
+    'Battery + Smart Panel':'Prioritize resilience rebates and outage-prep customer journeys.',
+    'Weatherization Bundle':'Scale no-upfront weatherization outreach with bill-saving messaging.',
+    'Smart Water Heater':'Deploy peak-time credits tied to automated water heater dispatch.',
+    'Smart Thermostat':'Increase thermostat instant-rebate campaigns before summer peak.'
+  })[topTech] || 'Bundle targeted rebate + financing pathways based on household need.';
+}
+
+function renderCountyMap(rows,key){
+  const grouped={};
+  rows.forEach(r=>{(grouped[r.county]??=[]).push(r);});
+  const stats=Object.entries(grouped).map(([county,list])=>({
+    county,
+    households:list.length,
+    avgPriority:list.reduce((a,r)=>a+r[key],0)/list.length,
+    avgBurden:list.reduce((a,r)=>a+r.energyBurden,0)/list.length,
+    topTech:list.reduce((acc,r)=>{acc[r.tech]=(acc[r.tech]||0)+1;return acc;},{}),
+  })).map(c=>({
+    ...c,
+    topTech:Object.entries(c.topTech).sort((a,b)=>b[1]-a[1])[0]?.[0]||'Smart Thermostat'
+  })).sort((a,b)=>b.avgPriority-a.avgPriority);
+
+  countyMap.innerHTML='';
+  countyMap.innerHTML += `<path d="M40,220 L120,150 L240,130 L360,80 L520,140 L700,170 L860,210 L810,250 L620,250 L470,235 L320,250 L160,270 L80,250 Z" fill="#eef4ff" stroke="#b4c6ea" stroke-width="2"/>`;
+  stats.forEach((c,i)=>{
+    const p=countyPos[c.county]||[90+((i*60)%760),80+((i*35)%180)];
+    countyMap.innerHTML += `<g class="county-marker" data-county="${c.county}" tabindex="0"><circle cx="${p[0]}" cy="${p[1]}" r="12"></circle><text x="${p[0]+16}" y="${p[1]+4}">${c.county}</text></g>`;
+  });
+  const showCounty=(county)=>{
+    const c=stats.find(x=>x.county===county);
+    if(!c) return;
+    countyDetail.innerHTML=`<b>${c.county}</b><br/>Households analyzed: ${c.households}<br/>Average priority score: ${c.avgPriority.toFixed(2)}<br/>Average energy burden: ${c.avgBurden.toFixed(1)}%<br/>Primary DER pathway: <b>${c.topTech}</b><br/>Initiative recommendation: ${countyInitiative(c.topTech)}`;
+    document.querySelectorAll('.county-marker').forEach(el=>el.classList.toggle('active',el.dataset.county===county));
+  };
+  document.querySelectorAll('.county-marker').forEach(el=>{
+    el.addEventListener('click',()=>showCounty(el.dataset.county));
+    el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showCounty(el.dataset.county);}});
+  });
+  if(stats[0]) showCounty(stats[0].county);
+}
+
 function render(){
   const key=getPriorityKey();
   const scored=households.map(recommend).sort((a,b)=>b[key]-a[key]);
@@ -47,6 +95,7 @@ function render(){
 
   const focus=topRows[0];
   detail.innerHTML=focus ? `<b>${focus.id} · ${focus.county}</b><br/><br/>This household is currently the top recommendation because it combines ${focus.peak57>9?'elevated':'moderate'} evening peak load, ${focus.energyBurden>7?'high':'material'} burden, and strong savings sensitivity.<br/><br/>Recommended pathway: <b>${focus.tech}</b> with <b>${focus.financing}</b>.` : 'No households match the current filters.';
+  renderCountyMap(topRows,key);
 
 }
 
