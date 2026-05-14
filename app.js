@@ -62,7 +62,8 @@ function render(){
     ['Estimated annual savings',`$${Math.round(topRows.reduce((s,r)=>s+r.affordability*12*0.05,0)).toLocaleString()}`],
     ['Highest-value segment',topRows[0]?.tech || 'n/a']
   ];
-  kpiCards.innerHTML=kpis.slice(0,6).map(([k,v])=>`<div class='card'>${k}<b>${v}</b></div>`).join('');
+  const visibleKpis=kpis.filter(([label])=>label.toLowerCase()!=='shown in table');
+  kpiCards.innerHTML=visibleKpis.slice(0,6).map(([k,v])=>`<div class='card'>${k}<b>${v}</b></div>`).join('');
 
   const focus=topRows[0];
   detail.innerHTML=focus
