@@ -21,12 +21,11 @@
       <p>Traditional outreach assumes low DER adoption is caused by low awareness.</p>
       <p><b>GRID</b> assumes the larger barrier is decision friction: uncertainty about fit, financing, timing, savings, and installation.</p>
     </section>
-
     <section class="cards" id="kpiCards"></section>
 
     <section class="panel filters">
       <label>County <select id="countyFilter"><option value="all">All</option></select></label>
-      <label>Income Band <select id="incomeFilter"><option value="all">All</option><option value="low">Low (&lt;$60k)</option><option value="mid">Middle ($60k-$120k)</option><option value="high">High (&gt;$120k)</option></select></label>
+      <label>Income Band <select id="incomeFilter"><option value="all">All</option><option value="very-low">Very Low (&lt;$40k)</option><option value="low">Low ($40k-$80k)</option><option value="mid">Middle ($80k-$120k)</option><option value="upper-mid">Upper-middle ($120k-$180k)</option><option value="high">High (&gt;$180k)</option></select></label>
       <label>DER Type <select id="derFilter"><option value="all">All</option><option>Smart Thermostat</option><option>Managed EV Charging</option><option>Weatherization Bundle</option><option>Smart Water Heater</option><option>Battery + Smart Panel</option></select></label>
       <label>Targeting Strategy
         <select id="strategyFilter">
@@ -41,8 +40,8 @@
 
 
     <section class="panel">
-      <h2>Main Recommendations</h2>
-      <table>
+      <h2>Main Recommendations (Top 50 by score)</h2>
+      <table class="recommendations-table">
         <thead><tr><th>Household</th><th>County</th><th>Priority Score</th><th>Best-fit Tech</th><th>Best Message</th><th>Best Financing</th><th>Best Incentive</th><th>Best Time to Contact</th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
@@ -51,11 +50,12 @@
     <section class="panel"><h2>Household Explanation</h2><div id="detail">Select a household to see an executive explanation.</div></section>
 
     <section class="panel">
-      <h2>Virginia Vulnerability Map (County-level)</h2>
-      <div class="legend"><span class="dot low"></span> Lower vulnerability <span class="dot med"></span> Medium <span class="dot high"></span> Highest vulnerability</div>
-      <svg id="vaMap" viewBox="0 0 900 360" class="va-map"></svg>
-      <div id="geo" class="geo"></div>
+      <h2>County DER Initiatives Map</h2>
+      <p>Click a county marker to view county-level DER initiative guidance.</p>
+      <svg id="countyMap" viewBox="0 0 900 320" class="county-map"></svg>
+      <div id="countyDetail" class="county-detail">Select a county to view DER initiative specifics.</div>
     </section>
+
   </main>
 
   <script src="app.js"></script>
