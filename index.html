@@ -47,13 +47,12 @@
       </table>
     </section>
 
-    <section class="grid2">
-      <section class="panel"><h2>Household Explanation</h2><div id="detail">Select a household to see an executive explanation.</div></section>
-      <section class="panel"><h2>Campaign Manager</h2><div id="campaign" class="insights"></div></section>
-    </section>
+    <section class="panel"><h2>Household Explanation</h2><div id="detail">Select a household to see an executive explanation.</div></section>
 
     <section class="panel">
-      <h2>Virginia Opportunity View (County-level)</h2>
+      <h2>Virginia Vulnerability Map (County-level)</h2>
+      <div class="legend"><span class="dot low"></span> Lower vulnerability <span class="dot med"></span> Medium <span class="dot high"></span> Highest vulnerability</div>
+      <svg id="vaMap" viewBox="0 0 900 360" class="va-map"></svg>
       <div id="geo" class="geo"></div>
     </section>
   </main>
