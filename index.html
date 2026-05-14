@@ -39,7 +39,16 @@
       <label>Outreach Goal <select id="goalFilter"><option value="all">All</option><option value="bill">Bill savings</option><option value="automation">Automation & convenience</option><option value="resilience">Resilience & outage protection</option></select></label>
     </section>
 
-    <section class="panel"><h2>Household Explanation</h2><div id="detail">Top household recommendation will appear here.</div></section>
+
+    <section class="panel">
+      <h2>Main Recommendations</h2>
+      <table>
+        <thead><tr><th>Household</th><th>County</th><th>Priority Score</th><th>Best-fit Tech</th><th>Best Message</th><th>Best Financing</th><th>Best Incentive</th><th>Best Time to Contact</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </section>
+
+    <section class="panel"><h2>Household Explanation</h2><div id="detail">Select a household to see an executive explanation.</div></section>
 
     <section class="panel">
       <h2>Virginia Vulnerability Map (County-level)</h2>
