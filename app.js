@@ -1,4 +1,5 @@
 let households = [];
+let selectedIds = new Set();
 const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 const TABLE_LIMIT = 50;
 const countyPos={Roanoke:[110,180],Loudoun:[330,90],Fairfax:[390,110],'Prince William':[360,135],Arlington:[410,95],Alexandria:[430,105],'Richmond City':[520,170],Henrico:[500,165],Chesterfield:[505,195],'Newport News':[700,195],Norfolk:[745,215],'Virginia Beach':[790,225]};
