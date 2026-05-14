@@ -53,24 +53,54 @@ function getPriorityKey(){const s=strategyFilter.value;return s==='grid'?'gridPr
 function filters(rows){const county=countyFilter.value,income=incomeFilter.value,der=derFilter.value,goal=goalFilter.value,min=+minAdoption.value/100;return rows.filter(r=>(county==='all'||r.county===county)&&(income==='all'||(income==='low'&&r.income<60000)||(income==='mid'&&r.income>=60000&&r.income<=120000)||(income==='high'&&r.income>120000))&&(der==='all'||r.tech===der)&&(goal==='all'||(goal==='bill'&&r.msg==='Bill savings')||(goal==='automation'&&r.msg==='Automation & convenience')||(goal==='resilience'&&r.msg==='Resilience & outage protection'))&&r.adoption>=min);}
 
 function renderMap(countyStats){
-  if(!countyStats.length){
-    vaMap.innerHTML="";
-    return;
-  }
+  vaMap.replaceChildren();
+  if(!countyStats.length) return;
+
   const vals=countyStats.map(c=>c.vulnerability);
   const min=vals.length?Math.min(...vals):0;
   const max=vals.length?Math.max(...vals):1;
   const color=v=>{const t=(v-min)/(max-min||1);return t>0.66?'#cb2b3e':t>0.33?'#f39c3d':'#5e9df6';};
-  vaMap.innerHTML=`<path d="M40,220 L120,150 L240,130 L360,80 L520,140 L700,170 L860,210 L810,250 L620,250 L470,235 L320,250 L160,270 L80,250 Z" fill="#eef4ff" stroke="#b4c6ea" stroke-width="2"/>`+
-    countyStats.map(c=>{
-      const shape=countyShapes[c.county];
-      if(!shape) return '';
-      return `<g class='county' tabindex='0'>
-        <title>${c.county}: Vulnerability ${c.vulnerability.toFixed(1)} | Households ${c.count}</title>
-        <rect x='${shape.x}' y='${shape.y}' width='${shape.w}' height='${shape.h}' rx='8' fill='${color(c.vulnerability)}' stroke='#1b3f87' stroke-width='1.5'/>
-        <text x='${shape.x+shape.w/2}' y='${shape.y+shape.h/2+4}' text-anchor='middle' font-size='11' fill='#fff'>${c.county}</text>
-      </g>`;
-    }).join('');
+  const NS='http://www.w3.org/2000/svg';
+
+  const outline=document.createElementNS(NS,'path');
+  outline.setAttribute('d','M40,220 L120,150 L240,130 L360,80 L520,140 L700,170 L860,210 L810,250 L620,250 L470,235 L320,250 L160,270 L80,250 Z');
+  outline.setAttribute('fill','#eef4ff');
+  outline.setAttribute('stroke','#b4c6ea');
+  outline.setAttribute('stroke-width','2');
+  vaMap.appendChild(outline);
+
+  countyStats.forEach(c=>{
+    const shape=countyShapes[c.county];
+    if(!shape) return;
+
+    const group=document.createElementNS(NS,'g');
+    group.setAttribute('class','county');
+    group.setAttribute('tabindex','0');
+
+    const title=document.createElementNS(NS,'title');
+    title.textContent=`${c.county}: Vulnerability ${c.vulnerability.toFixed(1)} | Households ${c.count}`;
+
+    const rect=document.createElementNS(NS,'rect');
+    rect.setAttribute('x',String(shape.x));
+    rect.setAttribute('y',String(shape.y));
+    rect.setAttribute('width',String(shape.w));
+    rect.setAttribute('height',String(shape.h));
+    rect.setAttribute('rx','8');
+    rect.setAttribute('fill',color(c.vulnerability));
+    rect.setAttribute('stroke','#1b3f87');
+    rect.setAttribute('stroke-width','1.5');
+
+    const text=document.createElementNS(NS,'text');
+    text.setAttribute('x',String(shape.x+shape.w/2));
+    text.setAttribute('y',String(shape.y+shape.h/2+4));
+    text.setAttribute('text-anchor','middle');
+    text.setAttribute('font-size','11');
+    text.setAttribute('fill','#fff');
+    text.textContent=c.county;
+
+    group.append(title,rect,text);
+    vaMap.appendChild(group);
+  });
 }
 
 function render(){
