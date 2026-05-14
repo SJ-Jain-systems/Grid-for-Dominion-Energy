@@ -1,6 +1,5 @@
 let households = [];
 const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
-const TABLE_LIMIT = 50;
 
 const countyFilter=document.getElementById('countyFilter');
 const incomeFilter=document.getElementById('incomeFilter');
@@ -9,6 +8,7 @@ const goalFilter=document.getElementById('goalFilter');
 const minAdoption=document.getElementById('minAdoption');
 const minValue=document.getElementById('minValue');
 const strategyFilter=document.getElementById('strategyFilter');
+const rowsEl=document.getElementById('rows');
 const detail=document.getElementById('detail');
 
 function recommend(h){
@@ -35,7 +35,10 @@ function render(){
   const key=getPriorityKey();
   const scored=households.map(recommend).sort((a,b)=>b[key]-a[key]);
   const rows=filters(scored);
-  const topRows=rows.slice(0,TABLE_LIMIT);
+  const topRows=rows;
+
+  rowsEl.innerHTML=topRows.map(r=>`<tr data-id='${r.id}'><td>${r.id}</td><td>${r.county}</td><td>${r[key].toFixed(2)}</td><td>${r.tech}</td><td>${r.msg}</td><td>${r.financing}</td><td>${r.incentive}</td><td>${r.when}</td></tr>`).join('');
+  document.querySelectorAll('#rows tr').forEach(tr=>tr.onclick=()=>{const r=topRows.find(x=>x.id===tr.dataset.id);detail.innerHTML=`<b>${r.id} · ${r.county}</b><br/><br/>This household is currently the top recommendation because it combines ${r.peak57>9?'elevated':'moderate'} evening peak load, ${r.energyBurden>7?'high':'material'} burden, and strong savings sensitivity.<br/><br/>Recommended pathway: <b>${r.tech}</b> with <b>${r.financing}</b>.`;});
 
   const focus=topRows[0];
   detail.innerHTML=focus ? `<b>${focus.id} · ${focus.county}</b><br/><br/>This household is currently the top recommendation because it combines ${focus.peak57>9?'elevated':'moderate'} evening peak load, ${focus.energyBurden>7?'high':'material'} burden, and strong savings sensitivity.<br/><br/>Recommended pathway: <b>${focus.tech}</b> with <b>${focus.financing}</b>.` : 'No households match the current filters.';
