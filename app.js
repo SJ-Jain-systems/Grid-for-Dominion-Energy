@@ -1,5 +1,6 @@
 let households = [];
 const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+const TABLE_LIMIT = 50;
 
 const countyFilter=document.getElementById('countyFilter');
 const incomeFilter=document.getElementById('incomeFilter');
@@ -10,6 +11,7 @@ const minValue=document.getElementById('minValue');
 const strategyFilter=document.getElementById('strategyFilter');
 const rowsEl=document.getElementById('rows');
 const detail=document.getElementById('detail');
+const kpiCards=document.getElementById('kpiCards');
 
 function recommend(h){
   const adoption=clamp(0.2*clamp((h.income-30000)/170000,0,1)+0.2*clamp(h.peak57/12,0,1)+0.15*h.engagement+0.1*(h.ev?0.95:0.6)+0.1*(1-h.smartThermostat*0.2)+0.1*h.financingAcceptance+0.15*h.solarSuitability,0,1);
@@ -35,7 +37,10 @@ function render(){
   const key=getPriorityKey();
   const scored=households.map(recommend).sort((a,b)=>b[key]-a[key]);
   const rows=filters(scored);
-  const topRows=rows.slice(0,100);
+  const topRows=rows.slice(0,TABLE_LIMIT);
+  const high=topRows.filter(r=>r[key]>topRows[0]?.[key]*0.7).length;
+  const kpis=[['Households analyzed',rows.length],['High-priority households',high],['Average energy burden',`${(topRows.reduce((s,r)=>s+r.energyBurden,0)/Math.max(topRows.length,1)).toFixed(1)}%`],['Projected peak reduction',`${(topRows.reduce((s,r)=>s+r.peak57*0.09,0)).toFixed(1)} MW`],['Estimated annual savings',`$${Math.round(topRows.reduce((s,r)=>s+r.affordability*12*0.05,0)).toLocaleString()}`],['Highest-value segment',topRows[0]?.tech || 'n/a']];
+  kpiCards.innerHTML=kpis.map(([k,v])=>`<div class='card'>${k}<b>${v}</b></div>`).join('');
 
   rowsEl.innerHTML=topRows.map(r=>`<tr data-id='${r.id}'><td>${r.id}</td><td>${r.county}</td><td>${r[key].toFixed(2)}</td><td>${r.tech}</td><td>${r.msg}</td><td>${r.financing}</td><td>${r.incentive}</td><td>${r.when}</td></tr>`).join('');
   document.querySelectorAll('#rows tr').forEach(tr=>tr.onclick=()=>{const r=topRows.find(x=>x.id===tr.dataset.id);detail.innerHTML=`<b>${r.id} · ${r.county}</b><br/><br/>This household is currently the top recommendation because it combines ${r.peak57>9?'elevated':'moderate'} evening peak load, ${r.energyBurden>7?'high':'material'} burden, and strong savings sensitivity.<br/><br/>Recommended pathway: <b>${r.tech}</b> with <b>${r.financing}</b>.`;});
