@@ -10,18 +10,31 @@
   <header>
     <div>
       <h1>DER Compass</h1>
-      <p>A simple decision tool for Dominion Energy DER targeting</p>
+      <p>A strategic decision tool for Dominion Energy DER targeting</p>
     </div>
-    <span class="badge">Internal Tool · Virginia</span>
+    <span class="badge">Internal Tool · Virginia · Synthetic Demo Data</span>
   </header>
 
   <main>
+    <section class="panel awareness">
+      <h2>Why not just awareness?</h2>
+      <p>Traditional outreach assumes low DER adoption is caused by low awareness.</p>
+      <p><b>DER Compass</b> assumes the larger barrier is decision friction: uncertainty about fit, financing, timing, savings, and installation.</p>
+    </section>
+
     <section class="cards" id="kpiCards"></section>
 
     <section class="panel filters">
       <label>County <select id="countyFilter"><option value="all">All</option></select></label>
       <label>Income Band <select id="incomeFilter"><option value="all">All</option><option value="low">Low (&lt;$60k)</option><option value="mid">Middle ($60k-$120k)</option><option value="high">High (&gt;$120k)</option></select></label>
       <label>DER Type <select id="derFilter"><option value="all">All</option><option>Smart Thermostat</option><option>Managed EV Charging</option><option>Weatherization Bundle</option><option>Smart Water Heater</option><option>Battery + Smart Panel</option></select></label>
+      <label>Targeting Strategy
+        <select id="strategyFilter">
+          <option value="adoption">Maximize Adoption</option>
+          <option value="grid">Maximize Grid Flexibility</option>
+          <option value="affordability">Maximize Affordability Impact</option>
+        </select>
+      </label>
       <label>Minimum Adoption Score <input id="minAdoption" type="range" min="0" max="90" value="0" /><span id="minValue">0%</span></label>
       <label>Outreach Goal <select id="goalFilter"><option value="all">All</option><option value="bill">Bill savings</option><option value="automation">Automation & convenience</option><option value="resilience">Resilience & outage protection</option></select></label>
     </section>
@@ -29,14 +42,14 @@
     <section class="panel">
       <h2>Main Recommendations</h2>
       <table>
-        <thead><tr><th>Household</th><th>County</th><th>Priority Score</th><th>Best-fit Tech</th><th>Best Message</th><th>Best Financing</th><th>Best Incentive</th><th>Best Time to Contact</th><th>Why Fit</th></tr></thead>
+        <thead><tr><th>Household</th><th>County</th><th>Priority Score</th><th>Best-fit Tech</th><th>Best Message</th><th>Best Financing</th><th>Best Incentive</th><th>Best Time to Contact</th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </section>
 
     <section class="grid2">
-      <section class="panel"><h2>Household Detail</h2><div id="detail">Select a household to see full recommendation.</div></section>
-      <section class="panel"><h2>Strategic Insights</h2><div id="insights" class="insights"></div></section>
+      <section class="panel"><h2>Household Explanation</h2><div id="detail">Select a household to see an executive explanation.</div></section>
+      <section class="panel"><h2>Campaign Builder</h2><div id="campaign" class="insights"></div></section>
     </section>
 
     <section class="panel">
