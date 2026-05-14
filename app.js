@@ -1,4 +1,5 @@
 let households = [];
+let selectedIds = new Set();
 const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 const TABLE_LIMIT = 50;
 
@@ -40,11 +41,10 @@ function getPriorityKey(){
 }
 
 function buildCampaign(candidates){
-  if(!candidates.length){
-    return '<div class="insight">No campaign output for current filters.</div>';
-  }
+  if(!candidates.length) return '<div class="insight">No campaign output for current filters.</div>';
   const topTier=candidates.slice(0,Math.max(10,Math.floor(candidates.length*0.3)));
   const topCounties=groupBy(topTier,'county').sort((a,b)=>b[1].length-a[1].length).slice(0,2).map(([name])=>name);
+  const selectedNote = selectedIds.size ? `Based on ${selectedIds.size} selected household(s).` : 'Based on top filtered households.';
   const campaign = {
     name: topTier[0].peak57>9?'Summer Peak Relief':'Year-Round Bill Relief',
     audience: `${mode(topTier.map(r=>r.peak57>8.5?'High peak-load households':'Cost-sensitive households'))} in ${topCounties.join(' and ') || mode(topTier.map(r=>r.county))}`,
@@ -55,20 +55,12 @@ function buildCampaign(candidates){
     timing: mode(topTier.map(r=>r.when)),
     lift: `${(8+Math.min(22,Math.round(topTier.reduce((s,r)=>s+r.adoption,0)/topTier.length*20))).toFixed(0)}%`
   };
-
-  return [
-    ['Campaign',campaign.name],['Audience segment',campaign.audience],['Recommended DER product',campaign.product],['Message theme',campaign.message],['Incentive',campaign.offer],['Financing',campaign.financing],['Outreach timing',campaign.timing],['Expected conversion lift',campaign.lift]
-  ].map(([k,v])=>`<div class='insight'><b>${k}</b><div>${v}</div></div>`).join('');
+  return [["Campaign",campaign.name],["Audience segment",campaign.audience],["Recommended DER product",campaign.product],["Message theme",campaign.message],["Incentive",campaign.offer],["Financing",campaign.financing],["Outreach timing",campaign.timing],["Expected conversion lift",campaign.lift],["Source",selectedNote]].map(([k,v])=>`<div class='insight'><b>${k}</b><div>${v}</div></div>`).join('');
 }
 
 function renderGeo(candidates, priorityKey){
-  if(!candidates.length){
-    return '<div class="geo-card"><b>No matching households</b><div>Adjust filters to see county opportunities.</div></div>';
-  }
-  return groupBy(candidates,'county')
-    .sort((a,b)=>b[1].length-a[1].length)
-    .map(([county,list])=>`<div class='geo-card'><b>${county}</b><div>${list.length} households</div><div>Avg priority: ${(list.reduce((s,r)=>s+r[priorityKey],0)/list.length).toFixed(2)}</div><div>Top DER: ${mode(list.map(r=>r.tech))}</div></div>`)
-    .join('');
+  if(!candidates.length) return '<div class="geo-card"><b>No matching households</b><div>Adjust filters to see county opportunities.</div></div>';
+  return groupBy(candidates,'county').sort((a,b)=>b[1].length-a[1].length).map(([county,list])=>`<div class='geo-card'><b>${county}</b><div>${list.length} households</div><div>Avg priority: ${(list.reduce((s,r)=>s+r[priorityKey],0)/list.length).toFixed(2)}</div><div>Top DER: ${mode(list.map(r=>r.tech))}</div></div>`).join('');
 }
 
 function render(){
@@ -76,6 +68,9 @@ function render(){
   const scored=households.map(recommend).sort((a,b)=>b[priorityKey]-a[priorityKey]);
   const rows=filters(scored);
   const topRows=rows.slice(0,TABLE_LIMIT);
+  const selectedRows = rows.filter(r=>selectedIds.has(r.id));
+  const campaignInput = selectedRows.length ? selectedRows : rows;
+
   const high=topRows.filter(r=>r[priorityKey]>topRows[0]?.[priorityKey]*0.7).length;
   const avgBurden=topRows.reduce((s,r)=>s+r.energyBurden,0)/Math.max(topRows.length,1);
   const peakRed=topRows.reduce((s,r)=>s+r.peak57*0.09,0);
@@ -85,10 +80,15 @@ function render(){
   const kpis=[['Households analyzed',rows.length],['High-priority households',high],['Average energy burden',`${avgBurden.toFixed(1)}%`],['Projected peak reduction',`${peakRed.toFixed(1)} MW`],['Estimated annual savings',`$${Math.round(annualSave).toLocaleString()}`],['Top segment',segment],['Recommended pathway',pathway]];
   document.getElementById('kpiCards').innerHTML=kpis.map(([k,v])=>`<div class='card'>${k}<b>${v}</b></div>`).join('');
 
-  document.getElementById('rows').innerHTML=topRows.map(r=>`<tr data-id='${r.id}'><td>${r.id}</td><td>${r.county}</td><td>${r[priorityKey].toFixed(2)}</td><td>${r.tech}</td><td>${r.msg}</td><td>${r.financing}</td><td>${r.incentive}</td><td>${r.when}</td></tr>`).join('');
-  document.querySelectorAll('#rows tr').forEach(tr=>tr.onclick=()=>{const r=topRows.find(x=>x.id===tr.dataset.id); document.getElementById('detail').innerHTML=`<b>${r.id} · ${r.county}</b><br/><br/>This household is a high-priority target because it combines ${r.peak57>9?'elevated':'moderate'} evening peak usage, ${r.energyBurden>7?'high':'material'} energy burden, and strong estimated savings sensitivity.<br/><br/>A <b>${r.tech}</b> pathway is recommended because ${r.why.toLowerCase()}.<br/><br/><b>${r.financing}</b> is recommended because financing friction is likely a core adoption barrier for this customer profile.<br/><br/>Executive summary: expected adoption score ${Math.round(r.adoption*100)}%, energy burden ${r.energyBurden.toFixed(1)}%, county ${r.county}.`;});
+  document.getElementById('rows').innerHTML=topRows.map(r=>`<tr data-id='${r.id}' class='${selectedIds.has(r.id)?'selected-row':''}'><td>${r.id}</td><td>${r.county}</td><td>${r[priorityKey].toFixed(2)}</td><td>${r.tech}</td><td>${r.msg}</td><td>${r.financing}</td><td>${r.incentive}</td><td>${r.when}</td></tr>`).join('');
+  document.querySelectorAll('#rows tr').forEach(tr=>tr.onclick=()=>{
+    const r=topRows.find(x=>x.id===tr.dataset.id);
+    if(selectedIds.has(r.id)) selectedIds.delete(r.id); else selectedIds.add(r.id);
+    document.getElementById('detail').innerHTML=`<b>${r.id} · ${r.county}</b><br/><br/>This household is a high-priority target because it combines ${r.peak57>9?'elevated':'moderate'} evening peak usage, ${r.energyBurden>7?'high':'material'} energy burden, and strong estimated savings sensitivity.<br/><br/>A <b>${r.tech}</b> pathway is recommended because ${r.why.toLowerCase()}.<br/><br/><b>${r.financing}</b> is recommended because financing friction is likely a core adoption barrier for this customer profile.<br/><br/>Executive summary: expected adoption score ${Math.round(r.adoption*100)}%, energy burden ${r.energyBurden.toFixed(1)}%, county ${r.county}.`;
+    render();
+  });
 
-  document.getElementById('campaign').innerHTML = buildCampaign(rows);
+  document.getElementById('campaign').innerHTML = buildCampaign(campaignInput);
   document.getElementById('geo').innerHTML = renderGeo(rows, priorityKey);
 }
 
@@ -101,5 +101,5 @@ async function init(){
   render();
 }
 
-['countyFilter','incomeFilter','derFilter','minAdoption','goalFilter','strategyFilter'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{document.getElementById('minValue').textContent=`${document.getElementById('minAdoption').value}%`;render();}));
+['countyFilter','incomeFilter','derFilter','minAdoption','goalFilter','strategyFilter'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{document.getElementById('minValue').textContent=`${document.getElementById('minAdoption').value}%`;selectedIds=new Set();render();}));
 init();
