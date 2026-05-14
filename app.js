@@ -1,5 +1,6 @@
 let households = [];
 const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+const TABLE_LIMIT = 50;
 
 function recommend(h){
   const adoption=clamp(0.2*clamp((h.income-30000)/170000,0,1)+0.2*clamp(h.peak57/12,0,1)+0.15*h.engagement+0.1*(h.ev?0.95:0.6)+0.1*(1-h.smartThermostat*0.2)+0.1*h.financingAcceptance+0.15*h.solarSuitability,0,1);
@@ -38,11 +39,43 @@ function getPriorityKey(){
   return 'adoptionPriority';
 }
 
+function buildCampaign(candidates){
+  if(!candidates.length){
+    return '<div class="insight">No campaign output for current filters.</div>';
+  }
+  const topTier=candidates.slice(0,Math.max(10,Math.floor(candidates.length*0.3)));
+  const topCounties=groupBy(topTier,'county').sort((a,b)=>b[1].length-a[1].length).slice(0,2).map(([name])=>name);
+  const campaign = {
+    name: topTier[0].peak57>9?'Summer Peak Relief':'Year-Round Bill Relief',
+    audience: `${mode(topTier.map(r=>r.peak57>8.5?'High peak-load households':'Cost-sensitive households'))} in ${topCounties.join(' and ') || mode(topTier.map(r=>r.county))}`,
+    product: mode(topTier.map(r=>r.tech)),
+    message: mode(topTier.map(r=>r.msg==='Automation & convenience'?'Lower bills automatically during peak hours':'Reduce monthly bill pressure with simple upgrades')),
+    offer: mode(topTier.map(r=>r.incentive)),
+    financing: mode(topTier.map(r=>r.financing)),
+    timing: mode(topTier.map(r=>r.when)),
+    lift: `${(8+Math.min(22,Math.round(topTier.reduce((s,r)=>s+r.adoption,0)/topTier.length*20))).toFixed(0)}%`
+  };
+
+  return [
+    ['Campaign',campaign.name],['Audience segment',campaign.audience],['Recommended DER product',campaign.product],['Message theme',campaign.message],['Incentive',campaign.offer],['Financing',campaign.financing],['Outreach timing',campaign.timing],['Expected conversion lift',campaign.lift]
+  ].map(([k,v])=>`<div class='insight'><b>${k}</b><div>${v}</div></div>`).join('');
+}
+
+function renderGeo(candidates, priorityKey){
+  if(!candidates.length){
+    return '<div class="geo-card"><b>No matching households</b><div>Adjust filters to see county opportunities.</div></div>';
+  }
+  return groupBy(candidates,'county')
+    .sort((a,b)=>b[1].length-a[1].length)
+    .map(([county,list])=>`<div class='geo-card'><b>${county}</b><div>${list.length} households</div><div>Avg priority: ${(list.reduce((s,r)=>s+r[priorityKey],0)/list.length).toFixed(2)}</div><div>Top DER: ${mode(list.map(r=>r.tech))}</div></div>`)
+    .join('');
+}
+
 function render(){
   const priorityKey=getPriorityKey();
   const scored=households.map(recommend).sort((a,b)=>b[priorityKey]-a[priorityKey]);
   const rows=filters(scored);
-  const topRows=rows.slice(0,25);
+  const topRows=rows.slice(0,TABLE_LIMIT);
   const high=topRows.filter(r=>r[priorityKey]>topRows[0]?.[priorityKey]*0.7).length;
   const avgBurden=topRows.reduce((s,r)=>s+r.energyBurden,0)/Math.max(topRows.length,1);
   const peakRed=topRows.reduce((s,r)=>s+r.peak57*0.09,0);
@@ -55,23 +88,8 @@ function render(){
   document.getElementById('rows').innerHTML=topRows.map(r=>`<tr data-id='${r.id}'><td>${r.id}</td><td>${r.county}</td><td>${r[priorityKey].toFixed(2)}</td><td>${r.tech}</td><td>${r.msg}</td><td>${r.financing}</td><td>${r.incentive}</td><td>${r.when}</td></tr>`).join('');
   document.querySelectorAll('#rows tr').forEach(tr=>tr.onclick=()=>{const r=topRows.find(x=>x.id===tr.dataset.id); document.getElementById('detail').innerHTML=`<b>${r.id} · ${r.county}</b><br/><br/>This household is a high-priority target because it combines ${r.peak57>9?'elevated':'moderate'} evening peak usage, ${r.energyBurden>7?'high':'material'} energy burden, and strong estimated savings sensitivity.<br/><br/>A <b>${r.tech}</b> pathway is recommended because ${r.why.toLowerCase()}.<br/><br/><b>${r.financing}</b> is recommended because financing friction is likely a core adoption barrier for this customer profile.<br/><br/>Executive summary: expected adoption score ${Math.round(r.adoption*100)}%, energy burden ${r.energyBurden.toFixed(1)}%, county ${r.county}.`;});
 
-  const top = topRows.slice(0,Math.max(1,Math.floor(topRows.length/3)));
-  const campaign = top.length ? {
-    name: top[0].peak57>9?'Summer Peak Relief':'Year-Round Bill Relief',
-    audience: `${mode(top.map(r=>r.peak57>8.5?'High peak-load households':'Cost-sensitive households'))} in ${mode(top.map(r=>r.county))}`,
-    product: mode(top.map(r=>r.tech)),
-    message: mode(top.map(r=>r.msg==='Automation & convenience'?'Lower bills automatically during peak hours':'Lower monthly bills with less hassle')),
-    offer: mode(top.map(r=>r.incentive)),
-    financing: mode(top.map(r=>r.financing)),
-    timing: mode(top.map(r=>r.when)),
-    lift: `${(8+Math.min(22,Math.round(top.reduce((s,r)=>s+r.adoption,0)/top.length*20))).toFixed(0)}%`
-  } : null;
-  document.getElementById('campaign').innerHTML = campaign ? [
-    ['Campaign',campaign.name],['Audience segment',campaign.audience],['Recommended DER product',campaign.product],['Message theme',campaign.message],['Incentive',campaign.offer],['Financing',campaign.financing],['Outreach timing',campaign.timing],['Expected conversion lift',campaign.lift]
-  ].map(([k,v])=>`<div class='insight'><b>${k}</b><div>${v}</div></div>`).join('') : '<div class="insight">No campaign output for current filters.</div>';
-
-  const geo = groupBy(topRows,'county').map(([county,list])=>`<div class='geo-card'><b>${county}</b><div>${list.length} households</div><div>Avg priority: ${(list.reduce((s,r)=>s+r[priorityKey],0)/list.length).toFixed(2)}</div></div>`).join('');
-  document.getElementById('geo').innerHTML=geo;
+  document.getElementById('campaign').innerHTML = buildCampaign(rows);
+  document.getElementById('geo').innerHTML = renderGeo(rows, priorityKey);
 }
 
 const mode=(arr)=>{const m={};arr.forEach(v=>m[v]=(m[v]||0)+1);return Object.entries(m).sort((a,b)=>b[1]-a[1])[0]?.[0];};
