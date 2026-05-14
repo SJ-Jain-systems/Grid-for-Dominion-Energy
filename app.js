@@ -64,6 +64,10 @@ function render(){
   ];
   const visibleKpis=kpis.filter(([label])=>label.toLowerCase()!=='shown in table');
   kpiCards.innerHTML=visibleKpis.slice(0,6).map(([k,v])=>`<div class='card'>${k}<b>${v}</b></div>`).join('');
+  kpiCards.querySelectorAll('.card').forEach(card=>{
+    const title=(card.childNodes[0]?.textContent||'').trim().toLowerCase();
+    if(title==='shown in table') card.remove();
+  });
 
   const focus=topRows[0];
   detail.innerHTML=focus
