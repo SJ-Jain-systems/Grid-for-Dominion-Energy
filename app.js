@@ -62,8 +62,9 @@ function render(){
     ['Estimated annual savings',`$${Math.round(topRows.reduce((s,r)=>s+r.affordability*12*0.05,0)).toLocaleString()}`],
     ['Top segment',topRows[0]?`${topRows[0].energyBurden>7?'High energy burden':'Moderate burden'} households`: 'n/a']
   ];
-  const visibleKpis=kpis.filter(([label])=>label.toLowerCase()!=='shown in table');
+  const visibleKpis=kpis.filter(([label])=>!label.toLowerCase().includes('table'));
   kpiCards.innerHTML=visibleKpis.map(([k,v])=>`<div class='card'>${k}<b>${v}</b></div>`).join('');
+  kpiCards.querySelectorAll('.card').forEach(card=>{if(card.textContent.toLowerCase().includes('shown in table')) card.remove();});
 
   const focus=topRows[0];
   detail.innerHTML=focus
