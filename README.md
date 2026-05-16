@@ -1,4 +1,4 @@
-# GRID Dashboard
+# GRID
 
 GRID is a browser-based decision support dashboard for targeting distributed energy resource (DER) programs across Virginia households.
 
@@ -11,7 +11,7 @@ GRID is a browser-based decision support dashboard for targeting distributed ene
 
 ## Scoring algorithm
 
-Each household is transformed into recommendation features and then scored across three strategy modes:
+Each household is transformed into a set of recommendation features and then scored across three strategy modes:
 
 - **Maximize Adoption** (`adoptionPriority`)
 - **Maximize Grid Flexibility** (`gridPriority`)
@@ -39,7 +39,7 @@ It also maps each recommendation to an assumed incentive cost.
 
 ### 3) Strategy-specific priority scores
 
-The final priority depends on selected strategy:
+The final priority depends on the selected strategy:
 
 - **Adoption priority** rewards high adoption potential and affordability/grid impact while penalizing friction and incentive cost.
 - **Grid priority** emphasizes dispatch/flex potential and adoption likelihood, normalized by incentive cost.
