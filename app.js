@@ -63,8 +63,7 @@ function renderCountyMap(rows,key){
   })).sort((a,b)=>b.avgPriority-a.avgPriority);
 
   countyMap.innerHTML='';
-  countyMap.innerHTML += `<path d="M48,228 L92,188 L150,170 L226,154 L302,124 L364,104 L440,118 L512,138 L592,154 L672,170 L736,188 L792,218 L846,212 L822,236 L778,246 L734,238 L716,218 L688,226 L646,246 L592,254 L536,256 L472,252 L404,262 L338,272 L266,278 L196,272 L136,264 L92,250 L62,240 Z" fill="#eef4ff" stroke="#b4c6ea" stroke-width="2"/>`;
-  countyMap.innerHTML += `<path d="M846,212 L872,182 L892,170 L886,198 L872,228 Z" fill="#eef4ff" stroke="#b4c6ea" stroke-width="2"/>`;
+  countyMap.innerHTML += `<path d="M42,216 L74,194 L118,176 L166,164 L224,152 L280,136 L334,118 L390,102 L444,96 L500,104 L560,112 L618,122 L672,136 L724,154 L770,172 L808,190 L836,206 L848,220 L842,230 L822,234 L804,226 L796,208 L804,190 L820,174 L840,158 L858,146 L872,148 L866,164 L850,182 L834,202 L824,220 L826,236 L840,246 L850,258 L838,266 L814,266 L784,258 L748,248 L710,242 L674,240 L642,244 L612,252 L580,260 L546,266 L512,268 L478,264 L442,258 L404,252 L366,252 L330,258 L294,268 L254,280 L212,288 L170,290 L132,282 L98,268 L72,250 L54,232 Z" fill="#eef4ff" stroke="#b4c6ea" stroke-width="2"/>`;
   stats.forEach((c,i)=>{
     const p=countyPos[c.county]||[90+((i*60)%760),80+((i*35)%180)];
     countyMap.innerHTML += `<g class="county-marker" data-county="${c.county}" tabindex="0"><circle cx="${p[0]}" cy="${p[1]}" r="12"></circle><text x="${p[0]+16}" y="${p[1]+4}">${c.county}</text></g>`;
