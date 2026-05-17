@@ -15,7 +15,7 @@ const kpiCards=document.getElementById('kpiCards');
 
 const countyMap=document.getElementById('countyMap');
 const countyDetail=document.getElementById('countyDetail');
-const countyPos={Roanoke:[110,180],Loudoun:[330,90],Fairfax:[390,110],'Prince William':[360,135],Arlington:[410,95],Alexandria:[430,105],'Richmond City':[520,170],Henrico:[500,165],Chesterfield:[505,195],'Newport News':[700,195],Norfolk:[745,215],'Virginia Beach':[790,225]};
+const countyPos={Roanoke:[245,250],Loudoun:[500,85],Fairfax:[535,115],'Prince William':[500,130],Arlington:[555,95],Alexandria:[570,105],'Richmond City':[610,200],Henrico:[595,190],Chesterfield:[600,220],'Newport News':[740,230],Norfolk:[770,245],'Virginia Beach':[790,255],Charlottesville:[430,185]};
 
 function recommend(h){
   const adoption=clamp(0.2*clamp((h.income-30000)/170000,0,1)+0.2*clamp(h.peak57/12,0,1)+0.15*h.engagement+0.1*(h.ev?0.95:0.6)+0.1*(1-h.smartThermostat*0.2)+0.1*h.financingAcceptance+0.15*h.solarSuitability,0,1);
@@ -63,7 +63,7 @@ function renderCountyMap(rows,key){
   })).sort((a,b)=>b.avgPriority-a.avgPriority);
 
   countyMap.innerHTML='';
-  countyMap.innerHTML += `<path d="M72,226 L82,206 L98,187 L120,170 L147,156 L179,145 L216,136 L257,129 L300,123 L345,118 L390,115 L436,115 L482,118 L528,124 L572,132 L614,143 L654,155 L691,169 L724,184 L751,199 L773,214 L791,228 L804,241 L815,252 L824,261 L834,266 L846,264 L857,256 L867,244 L875,228 L881,211 L885,192 L889,172 L895,157 L904,146 L915,141 L925,146 L929,158 L929,174 L925,193 L919,212 L911,230 L901,247 L887,262 L870,274 L850,283 L825,289 L796,293 L763,294 L727,293 L689,290 L649,285 L607,279 L564,273 L520,267 L476,263 L432,261 L388,262 L344,266 L301,272 L260,280 L222,288 L186,295 L154,299 L128,299 L106,294 L90,284 L79,270 L72,252 Z" fill="#eef4ff" stroke="#b4c6ea" stroke-width="2"/>`;
+  countyMap.innerHTML += `<path d="M55,290 L105,282 L150,266 L188,242 L220,212 L255,185 L292,165 L330,145 L360,112 L392,76 L430,42 L470,2 L512,38 L548,72 L565,38 L596,44 L615,70 L648,80 L676,105 L710,128 L738,160 L762,190 L792,215 L826,232 L858,258 L900,282 L882,306 L760,309 L640,311 L520,311 L400,309 L285,306 L178,300 L55,290 Z" fill="#eef4ff" stroke="#1e3a8a" stroke-width="3" stroke-linejoin="round"/>`;
   stats.forEach((c,i)=>{
     const p=countyPos[c.county]||[90+((i*60)%760),80+((i*35)%180)];
     countyMap.innerHTML += `<g class="county-marker" data-county="${c.county}" tabindex="0"><circle cx="${p[0]}" cy="${p[1]}" r="12"></circle><text x="${p[0]+16}" y="${p[1]+4}">${c.county}</text></g>`;
