@@ -15,7 +15,7 @@ const kpiCards=document.getElementById('kpiCards');
 
 const countyMap=document.getElementById('countyMap');
 const countyDetail=document.getElementById('countyDetail');
-const countyPos={Roanoke:[110,180],Loudoun:[330,90],Fairfax:[390,110],'Prince William':[360,135],Arlington:[410,95],Alexandria:[430,105],'Richmond City':[520,170],Henrico:[500,165],Chesterfield:[505,195],'Newport News':[700,195],Norfolk:[745,215],'Virginia Beach':[790,225]};
+const countyPos={Roanoke:[192,246],Loudoun:[402,158],Fairfax:[452,170],'Prince William':[430,184],Arlington:[470,162],Alexandria:[484,172],'Richmond City':[560,220],Henrico:[542,214],Chesterfield:[548,236],'Newport News':[696,246],Norfolk:[736,264],'Virginia Beach':[776,272]};
 
 function recommend(h){
   const adoption=clamp(0.2*clamp((h.income-30000)/170000,0,1)+0.2*clamp(h.peak57/12,0,1)+0.15*h.engagement+0.1*(h.ev?0.95:0.6)+0.1*(1-h.smartThermostat*0.2)+0.1*h.financingAcceptance+0.15*h.solarSuitability,0,1);
@@ -63,7 +63,7 @@ function renderCountyMap(rows,key){
   })).sort((a,b)=>b.avgPriority-a.avgPriority);
 
   countyMap.innerHTML='';
-  countyMap.innerHTML += `<path d="M40,220 L120,150 L240,130 L360,80 L520,140 L700,170 L860,210 L810,250 L620,250 L470,235 L320,250 L160,270 L80,250 Z" fill="#eef4ff" stroke="#b4c6ea" stroke-width="2"/>`;
+  countyMap.innerHTML += `<path d="M116,258 L132,244 L156,232 L182,224 L212,220 L244,212 L274,202 L306,190 L336,176 L366,162 L394,150 L424,142 L456,140 L490,144 L526,149 L560,154 L596,160 L632,168 L666,178 L700,192 L732,208 L760,224 L784,240 L804,258 L820,278 L832,298 L844,314 L858,324 L872,326 L884,318 L892,304 L898,286 L904,268 L910,250 L916,236 L922,226 L916,222 L906,228 L894,242 L880,258 L866,274 L856,292 L848,310 L840,326 L828,338 L812,346 L794,348 L772,346 L748,340 L722,334 L696,328 L670,324 L644,324 L618,328 L592,334 L566,340 L540,346 L514,350 L488,352 L462,350 L436,346 L410,342 L384,340 L358,342 L332,348 L304,356 L276,366 L248,374 L220,380 L194,380 L170,374 L150,364 L134,350 L122,334 L114,316 L110,298 Z" fill="#eef4ff" stroke="#8da9da" stroke-width="3"/>`;
   stats.forEach((c,i)=>{
     const p=countyPos[c.county]||[90+((i*60)%760),80+((i*35)%180)];
     countyMap.innerHTML += `<g class="county-marker" data-county="${c.county}" tabindex="0"><circle cx="${p[0]}" cy="${p[1]}" r="12"></circle><text x="${p[0]+16}" y="${p[1]+4}">${c.county}</text></g>`;
