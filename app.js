@@ -63,7 +63,8 @@ function renderCountyMap(rows,key){
   })).sort((a,b)=>b.avgPriority-a.avgPriority);
 
   countyMap.innerHTML='';
-  countyMap.innerHTML += `<path d="M40,220 L120,150 L240,130 L360,80 L520,140 L700,170 L860,210 L810,250 L620,250 L470,235 L320,250 L160,270 L80,250 Z" fill="#eef4ff" stroke="#b4c6ea" stroke-width="2"/>`;
+  countyMap.innerHTML += `<path d="M48,228 L92,188 L150,170 L226,154 L302,124 L364,104 L440,118 L512,138 L592,154 L672,170 L736,188 L792,218 L846,212 L822,236 L778,246 L734,238 L716,218 L688,226 L646,246 L592,254 L536,256 L472,252 L404,262 L338,272 L266,278 L196,272 L136,264 L92,250 L62,240 Z" fill="#eef4ff" stroke="#b4c6ea" stroke-width="2"/>`;
+  countyMap.innerHTML += `<path d="M846,212 L872,182 L892,170 L886,198 L872,228 Z" fill="#eef4ff" stroke="#b4c6ea" stroke-width="2"/>`;
   stats.forEach((c,i)=>{
     const p=countyPos[c.county]||[90+((i*60)%760),80+((i*35)%180)];
     countyMap.innerHTML += `<g class="county-marker" data-county="${c.county}" tabindex="0"><circle cx="${p[0]}" cy="${p[1]}" r="12"></circle><text x="${p[0]+16}" y="${p[1]+4}">${c.county}</text></g>`;
