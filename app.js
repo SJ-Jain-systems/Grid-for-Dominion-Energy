@@ -469,6 +469,17 @@ function buildCampaigns(rows){
   return campaigns.sort((a,b)=>b.campaignScore-a.campaignScore);
 }
 
+function campaignTimingReason(timing, campaign){
+  const reasons = {
+    'Before summer peak': `this segment shows elevated summer load risk and can capture demand reduction before peak-season system stress`,
+    'Before winter heating season': `winter bill pressure is highest for this segment, so pre-season enrollment improves readiness before heating demand rises`,
+    'During monthly bill cycle': `bill statements create a predictable decision window when households are most attentive to energy costs and enrollment options`,
+    'After outage events': `recent outage awareness increases receptivity to resilience-focused upgrades and faster enrollment follow-through`,
+    'At equipment replacement moments': `customers are more likely to adopt when a replacement decision is already underway`
+  };
+  return reasons[timing] || `this window aligns with observed customer decision timing across the segment`;
+}
+
 function renderCampaigns(rows){
   if(!campaignCards) return;
   const objectiveLabel = campaignObjective?.options?.[campaignObjective.selectedIndex]?.text || 'Maximize Adoption';
@@ -500,6 +511,9 @@ function renderCampaigns(rows){
         <p><span>Message</span><b>${c.recommendedMessage}</b></p>
         <p><span>Timing</span><b>${c.recommendedTiming}</b></p>
       </div>
+      <p class="campaign-explanation">
+        This campaign targets <b>${c.audienceSize.toLocaleString()}</b> households whose main adoption barrier is <b>${c.barrierLabel}</b>. The recommended DER pathway is <b>${c.tech}</b>, and the best Dominion intervention is <b>${c.recommendedOffering}</b>. This campaign should use <b>${c.recommendedMessage}</b> messaging and launch <b>${c.recommendedTiming}</b> because ${campaignTimingReason(c.recommendedTiming, c)}.
+      </p>
     </article>
   `).join('');
 }
