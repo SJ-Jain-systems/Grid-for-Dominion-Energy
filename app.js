@@ -559,17 +559,17 @@ function renderCampaigns(rows){
         <h3>${c.campaignName}</h3>
         ${idx < 3 ? '<span class="launch-badge">Launch Candidate</span>' : ''}
       </div>
-      <div class="campaign-grid">
-        <p><span>Audience</span><b>${c.audienceSize.toLocaleString()}</b></p>
-        <p><span>Barrier</span><b>${c.barrierLabel}</b></p>
-        <p><span>Dominion Offer</span><b>${c.recommendedOffering}</b></p>
-        <p><span>Best-fit DER</span><b>${c.tech}</b></p>
-        <p><span>Avg Barrier Score</span><b>${c.avgBarrierScore.toFixed(1)}</b></p>
-        <p><span>Avg Priority</span><b>${c.avgPriorityScore.toFixed(2)}</b></p>
-        <p><span>Estimated Cost</span><b>$${Math.round(c.estimatedCampaignCost).toLocaleString()}</b></p>
-        <p><span>Expected Lift</span><b>${(c.expectedAdoptionLift * 100).toFixed(1)}%</b></p>
-        <p><span>Message</span><b>${c.recommendedMessage}</b></p>
-        <p><span>Timing</span><b>${c.recommendedTiming}</b></p>
+      <div class="campaign-rows">
+        <p class="campaign-row"><span>Audience</span><b>${c.audienceSize.toLocaleString()}</b></p>
+        <p class="campaign-row"><span>Barrier</span><b>${c.barrierLabel}</b></p>
+        <p class="campaign-row"><span>Dominion Offer</span><b>${c.recommendedOffering}</b></p>
+        <p class="campaign-row"><span>Best-fit DER</span><b>${c.tech}</b></p>
+        <p class="campaign-row"><span>Avg Barrier Score</span><b>${c.avgBarrierScore.toFixed(1)}</b></p>
+        <p class="campaign-row"><span>Avg Priority</span><b>${c.avgPriorityScore.toFixed(2)}</b></p>
+        <p class="campaign-row"><span>Estimated Cost</span><b>$${Math.round(c.estimatedCampaignCost).toLocaleString()}</b></p>
+        <p class="campaign-row"><span>Expected Lift</span><b>${(c.expectedAdoptionLift * 100).toFixed(1)}%</b></p>
+        <p class="campaign-row"><span>Message</span><b>${c.recommendedMessage}</b></p>
+        <p class="campaign-row"><span>Timing</span><b>${c.recommendedTiming}</b></p>
       </div>
       <p class="campaign-explanation">
         This campaign targets <b>${c.audienceSize.toLocaleString()}</b> households whose main adoption barrier is <b>${c.barrierLabel}</b>. The recommended DER pathway is <b>${c.tech}</b>, and the best Dominion intervention is <b>${c.recommendedOffering}</b>. This campaign should use <b>${c.recommendedMessage}</b> messaging and launch <b>${c.recommendedTiming}</b> because ${campaignTimingReason(c.recommendedTiming, c)}.
