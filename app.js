@@ -12,6 +12,7 @@ const strategyFilter=document.getElementById('strategyFilter');
 const rowsEl=document.getElementById('rows');
 const detail=document.getElementById('detail');
 const kpiCards=document.getElementById('kpiCards');
+const campaignCards=document.getElementById('campaignCards');
 
 const countyMap=document.getElementById('countyMap');
 const countyDetail=document.getElementById('countyDetail');
@@ -346,6 +347,115 @@ function recommend(h){
 function getPriorityKey(){const s=strategyFilter.value;return s==='grid'?'gridPriority':s==='affordability'?'affordabilityPriority':'adoptionPriority';}
 function filters(rows){const county=countyFilter.value,income=incomeFilter.value,der=derFilter.value,goal=goalFilter.value,min=+minAdoption.value/100;return rows.filter(r=>(county==='all'||r.county===county)&&(income==='all'||(income==='very-low'&&r.income<40000)||(income==='low'&&r.income>=40000&&r.income<80000)||(income==='mid'&&r.income>=80000&&r.income<=120000)||(income==='upper-mid'&&r.income>120000&&r.income<=180000)||(income==='high'&&r.income>180000))&&(der==='all'||r.tech===der)&&(goal==='all'||(goal==='bill'&&r.msg==='Bill savings')||(goal==='automation'&&r.msg==='Automation & convenience')||(goal==='resilience'&&r.msg==='Resilience & outage protection'))&&r.adoption>=min);}
 
+function buildCampaigns(rows){
+  const campaignRows = Array.isArray(rows) ? rows : [];
+  const grouped = {};
+
+  campaignRows.forEach((r) => {
+    const barrier = r.dominantBarrier?.barrierKey || r.dominantBarrierKey || 'unknownBarrier';
+    const tech = r.tech || 'General DER';
+    const key = `${barrier}__${tech}`;
+    (grouped[key] ??= []).push(r);
+  });
+
+  const campaigns = Object.entries(grouped).map(([_, list]) => {
+    const audienceSize = list.length;
+    const avgPriorityScore = list.reduce((sum, r) => sum + (r.adoptionPriority || 0), 0) / audienceSize;
+    const avgBarrierScore = list.reduce((sum, r) => sum + (r.dominantBarrierScore || 0), 0) / audienceSize;
+    const avgEnergyBurden = list.reduce((sum, r) => sum + (r.energyBurden || 0), 0) / audienceSize;
+
+    const barrier = list[0]?.dominantBarrier?.barrierKey || list[0]?.dominantBarrierKey || 'unknownBarrier';
+    const barrierLabel = list[0]?.dominantBarrierLabel || barrierLabelMap[barrier] || barrier;
+    const tech = list[0]?.tech || 'General DER';
+    const recommendedOffering = list[0]?.recommendedOffering || barrierOfferMap[barrier] || 'Standard energy advisor outreach';
+
+    const countyCounts = list.reduce((acc, r) => {
+      acc[r.county] = (acc[r.county] || 0) + 1;
+      return acc;
+    }, {});
+    const dominantCounty = Object.entries(countyCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Unknown';
+
+    const messageCounts = list.reduce((acc, r) => {
+      acc[r.msg] = (acc[r.msg] || 0) + 1;
+      return acc;
+    }, {});
+    const recommendedMessage = Object.entries(messageCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Bill savings';
+
+    const timingCounts = list.reduce((acc, r) => {
+      acc[r.when] = (acc[r.when] || 0) + 1;
+      return acc;
+    }, {});
+    const recommendedTiming = Object.entries(timingCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'During monthly bill cycle';
+
+    const estimatedCampaignCost = (1400 + (audienceSize * 120) + (avgBarrierScore * 11) + (avgEnergyBurden * 35));
+    const expectedAdoptionLift = clamp(
+      0.08 +
+      (avgPriorityScore * 0.06) +
+      ((avgBarrierScore / 100) * 0.14) +
+      (Math.log10(audienceSize + 1) * 0.05),
+      0.03,
+      0.45
+    );
+
+    const campaignScore =
+      (avgPriorityScore * 45) +
+      ((avgBarrierScore / 100) * 22) +
+      (Math.log10(audienceSize + 1) * 16) +
+      (expectedAdoptionLift * 125) -
+      (estimatedCampaignCost / 1300);
+
+    return {
+      campaignName: `${barrierLabel} · ${tech}`,
+      barrier,
+      barrierLabel,
+      tech,
+      recommendedOffering,
+      audienceSize,
+      avgPriorityScore,
+      avgBarrierScore,
+      avgEnergyBurden,
+      dominantCounty,
+      estimatedCampaignCost,
+      expectedAdoptionLift,
+      campaignScore,
+      recommendedMessage,
+      recommendedTiming
+    };
+  });
+
+  return campaigns.sort((a,b)=>b.campaignScore-a.campaignScore);
+}
+
+function renderCampaigns(rows){
+  if(!campaignCards) return;
+  const campaigns = buildCampaigns(rows).slice(0, 6);
+  if(!campaigns.length){
+    campaignCards.innerHTML = "<div class='card'>No campaign candidates for the current filters.</div>";
+    return;
+  }
+
+  campaignCards.innerHTML = campaigns.map((c, idx) => `
+    <article class="card campaign-card">
+      <div class="campaign-card-head">
+        <h3>${c.campaignName}</h3>
+        ${idx < 3 ? '<span class="launch-badge">Launch Candidate</span>' : ''}
+      </div>
+      <div class="campaign-grid">
+        <p><span>Audience</span><b>${c.audienceSize.toLocaleString()}</b></p>
+        <p><span>Barrier</span><b>${c.barrierLabel}</b></p>
+        <p><span>Dominion Offer</span><b>${c.recommendedOffering}</b></p>
+        <p><span>Best-fit DER</span><b>${c.tech}</b></p>
+        <p><span>Avg Barrier Score</span><b>${c.avgBarrierScore.toFixed(1)}</b></p>
+        <p><span>Avg Priority</span><b>${c.avgPriorityScore.toFixed(2)}</b></p>
+        <p><span>Estimated Cost</span><b>$${Math.round(c.estimatedCampaignCost).toLocaleString()}</b></p>
+        <p><span>Expected Lift</span><b>${(c.expectedAdoptionLift * 100).toFixed(1)}%</b></p>
+        <p><span>Message</span><b>${c.recommendedMessage}</b></p>
+        <p><span>Timing</span><b>${c.recommendedTiming}</b></p>
+      </div>
+    </article>
+  `).join('');
+}
+
 
 function countyInitiative(topTech){
   return ({
@@ -423,11 +533,20 @@ function render(){
   const kpis=[['Households analyzed',rows.length],['High-priority households',high],['Average energy burden',`${(topRows.reduce((s,r)=>s+r.energyBurden,0)/Math.max(topRows.length,1)).toFixed(1)}%`],['Projected peak reduction',`${(topRows.reduce((s,r)=>s+r.peak57*0.09,0)).toFixed(1)} MW`],['Estimated annual savings',`$${Math.round(topRows.reduce((s,r)=>s+r.affordability*12*0.05,0)).toLocaleString()}`],['Highest-value segment',topRows[0]?.tech || 'n/a']];
   kpiCards.innerHTML=kpis.map(([k,v])=>`<div class='card'>${k}<b>${v}</b></div>`).join('');
 
-  rowsEl.innerHTML=topRows.map(r=>`<tr data-id='${r.id}'><td>${r.id}</td><td>${r.county}</td><td>${r[key].toFixed(2)}</td><td>${r.tech}</td><td>${r.msg}</td><td>${r.financing}</td><td>${r.incentive}</td><td>${r.when}</td></tr>`).join('');
-  document.querySelectorAll('#rows tr').forEach(tr=>tr.onclick=()=>{const r=topRows.find(x=>x.id===tr.dataset.id);detail.innerHTML=`<b>${r.id} · ${r.county}</b><br/><br/>This household is currently the top recommendation because it combines ${r.peak57>9?'elevated':'moderate'} evening peak load, ${r.energyBurden>7?'high':'material'} burden, and strong savings sensitivity.<br/><br/>Recommended pathway: <b>${r.tech}</b> with <b>${r.financing}</b>.`;});
+  const renderDetail = (r) => `
+    <b>${r.id} · ${r.county}</b><br/><br/>
+    <b>Why this household is a good target:</b> ${r.why}, with ${r.peak57 > 9 ? 'elevated' : 'moderate'} 5-7pm demand and an estimated priority score of ${r[key].toFixed(2)}.<br/><br/>
+    <b>Dominant adoption barrier:</b> ${r.dominantBarrierLabel || 'Not identified'} (${(r.dominantBarrierScore || 0).toFixed(1)}).<br/><br/>
+    <b>Why this Dominion offering fits:</b> <b>${r.recommendedOffering}</b> — ${r.recommendedOfferingExplanation}<br/><br/>
+    <b>Recommended campaign message:</b> ${r.msg}.
+  `;
+
+  rowsEl.innerHTML=topRows.map(r=>`<tr data-id='${r.id}'><td>${r.id}</td><td>${r.county}</td><td>${r[key].toFixed(2)}</td><td>${r.tech}</td><td>${r.msg}</td><td>${r.financing}</td><td>${r.incentive}</td><td>${r.when}</td><td>${r.dominantBarrierLabel || 'n/a'}</td><td>${(r.dominantBarrierScore || 0).toFixed(1)}</td><td>${r.recommendedOffering}</td></tr>`).join('');
+  document.querySelectorAll('#rows tr').forEach(tr=>tr.onclick=()=>{const r=topRows.find(x=>x.id===tr.dataset.id);detail.innerHTML=renderDetail(r);});
 
   const focus=topRows[0];
-  detail.innerHTML=focus ? `<b>${focus.id} · ${focus.county}</b><br/><br/>This household is currently the top recommendation because it combines ${focus.peak57>9?'elevated':'moderate'} evening peak load, ${focus.energyBurden>7?'high':'material'} burden, and strong savings sensitivity.<br/><br/>Recommended pathway: <b>${focus.tech}</b> with <b>${focus.financing}</b>.` : 'No households match the current filters.';
+  detail.innerHTML=focus ? renderDetail(focus) : 'No households match the current filters.';
+  renderCampaigns(rows);
   renderCountyMap(topRows,key);
 
 }

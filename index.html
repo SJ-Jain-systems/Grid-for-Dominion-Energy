@@ -42,9 +42,23 @@
     <section class="panel">
       <h2>Main Recommendations (Top 50 Target Homes by Score)</h2>
       <table class="recommendations-table">
-        <thead><tr><th>Household</th><th>County</th><th>Priority Score</th><th>Best-fit Tech</th><th>Best Message</th><th>Best Financing</th><th>Best Incentive</th><th>Best Time to Contact</th></tr></thead>
+        <thead><tr><th>Household</th><th>County</th><th>Priority</th><th>Tech</th><th>Message</th><th>Financing</th><th>Incentive</th><th>Contact Timing</th><th>Top Barrier</th><th>Barrier Score</th><th>Dominion Offer</th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
+    </section>
+
+    <section class="panel">
+      <h2>Campaign Manager</h2>
+      <p>Campaigns are built from dominant customer adoption barriers paired with best-fit DER technologies.</p>
+      <label>Campaign Objective
+        <select id="campaignObjective">
+          <option value="adoption">Maximize Adoption</option>
+          <option value="affordability">Maximize Affordability Impact</option>
+          <option value="grid">Maximize Grid Flexibility</option>
+          <option value="readiness">Maximize Customer Readiness</option>
+        </select>
+      </label>
+      <div class="cards" id="campaignCards"></div>
     </section>
 
     <section class="panel"><h2>Household Explanation</h2><div id="detail">Select a household to see an executive explanation.</div></section>
