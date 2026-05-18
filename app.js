@@ -9,6 +9,7 @@ const goalFilter=document.getElementById('goalFilter');
 const minAdoption=document.getElementById('minAdoption');
 const minValue=document.getElementById('minValue');
 const strategyFilter=document.getElementById('strategyFilter');
+const campaignObjective=document.getElementById('campaignObjective');
 const rowsEl=document.getElementById('rows');
 const detail=document.getElementById('detail');
 const kpiCards=document.getElementById('kpiCards');
@@ -349,6 +350,7 @@ function filters(rows){const county=countyFilter.value,income=incomeFilter.value
 
 function buildCampaigns(rows){
   const campaignRows = Array.isArray(rows) ? rows : [];
+  const objective = campaignObjective?.value || 'adoption';
   const grouped = {};
 
   campaignRows.forEach((r) => {
@@ -361,8 +363,18 @@ function buildCampaigns(rows){
   const campaigns = Object.entries(grouped).map(([_, list]) => {
     const audienceSize = list.length;
     const avgPriorityScore = list.reduce((sum, r) => sum + (r.adoptionPriority || 0), 0) / audienceSize;
+    const avgAffordabilityPriority = list.reduce((sum, r) => sum + (r.affordabilityPriority || 0), 0) / audienceSize;
+    const avgGridPriority = list.reduce((sum, r) => sum + (r.gridPriority || 0), 0) / audienceSize;
     const avgBarrierScore = list.reduce((sum, r) => sum + (r.dominantBarrierScore || 0), 0) / audienceSize;
     const avgEnergyBurden = list.reduce((sum, r) => sum + (r.energyBurden || 0), 0) / audienceSize;
+    const avgPeak57 = list.reduce((sum, r) => sum + (r.peak57 || 0), 0) / audienceSize;
+    const avgEngagement = list.reduce((sum, r) => sum + (r.engagement || 0), 0) / audienceSize;
+    const avgFinancingAcceptance = list.reduce((sum, r) => sum + (r.financingAcceptance || 0), 0) / audienceSize;
+    const avgBarrierSeverity = avgBarrierScore / 100;
+    const evLoadShare = list.filter((r) => r.ev).length / audienceSize;
+    const smartWaterShare = list.filter((r) => r.tech === 'Smart Water Heater').length / audienceSize;
+    const batteryOrSmartPanelShare = list.filter((r) => r.tech === 'Battery + Smart Panel').length / audienceSize;
+    const incomeQualifiedShare = list.filter((r) => (r.income || 0) < 80000).length / audienceSize;
 
     const barrier = list[0]?.dominantBarrier?.barrierKey || list[0]?.dominantBarrierKey || 'unknownBarrier';
     const barrierLabel = list[0]?.dominantBarrierLabel || barrierLabelMap[barrier] || barrier;
@@ -397,12 +409,40 @@ function buildCampaigns(rows){
       0.45
     );
 
-    const campaignScore =
-      (avgPriorityScore * 45) +
-      ((avgBarrierScore / 100) * 22) +
-      (Math.log10(audienceSize + 1) * 16) +
-      (expectedAdoptionLift * 125) -
-      (estimatedCampaignCost / 1300);
+    // Objective-based campaign scoring model:
+    // - Adoption mode: prioritize adoptionPriority + expected lift + audience scale.
+    // - Affordability mode: prioritize affordabilityPriority + high energy burden + income-qualified share.
+    // - Grid mode: prioritize gridPriority + peak57 + EV load + smart water heater + battery/smart panel pathways.
+    // - Readiness mode: prioritize engagement + financing acceptance + lower barrier severity.
+    const campaignScoreByObjective = {
+      adoption:
+        (avgPriorityScore * 45) +
+        (expectedAdoptionLift * 140) +
+        (Math.log10(audienceSize + 1) * 18) +
+        ((avgBarrierScore / 100) * 10) -
+        (estimatedCampaignCost / 1300),
+      affordability:
+        (avgAffordabilityPriority * 50) +
+        (clamp(avgEnergyBurden / 12, 0, 1) * 34) +
+        (incomeQualifiedShare * 26) +
+        (expectedAdoptionLift * 35) -
+        (estimatedCampaignCost / 1700),
+      grid:
+        (avgGridPriority * 50) +
+        (clamp(avgPeak57 / 20, 0, 1) * 28) +
+        (evLoadShare * 18) +
+        (smartWaterShare * 12) +
+        (batteryOrSmartPanelShare * 14) -
+        (estimatedCampaignCost / 1750),
+      readiness:
+        (clamp(avgEngagement / 100, 0, 1) * 42) +
+        (avgFinancingAcceptance * 35) +
+        ((1 - avgBarrierSeverity) * 28) +
+        (expectedAdoptionLift * 20) +
+        (Math.log10(audienceSize + 1) * 10) -
+        (estimatedCampaignCost / 1900)
+    };
+    const campaignScore = campaignScoreByObjective[objective] ?? campaignScoreByObjective.adoption;
 
     return {
       campaignName: `${barrierLabel} · ${tech}`,
@@ -412,6 +452,8 @@ function buildCampaigns(rows){
       recommendedOffering,
       audienceSize,
       avgPriorityScore,
+      avgAffordabilityPriority,
+      avgGridPriority,
       avgBarrierScore,
       avgEnergyBurden,
       dominantCounty,
@@ -428,13 +470,16 @@ function buildCampaigns(rows){
 
 function renderCampaigns(rows){
   if(!campaignCards) return;
+  const objectiveLabel = campaignObjective?.options?.[campaignObjective.selectedIndex]?.text || 'Maximize Adoption';
   const campaigns = buildCampaigns(rows).slice(0, 6);
   if(!campaigns.length){
     campaignCards.innerHTML = "<div class='card'>No campaign candidates for the current filters.</div>";
     return;
   }
 
-  campaignCards.innerHTML = campaigns.map((c, idx) => `
+  campaignCards.innerHTML = `
+    <div class="card"><b>Ranking objective:</b> ${objectiveLabel}</div>
+  ` + campaigns.map((c, idx) => `
     <article class="card campaign-card">
       <div class="campaign-card-head">
         <h3>${c.campaignName}</h3>
@@ -558,4 +603,5 @@ async function init(){
   render();
 }
 ['countyFilter','incomeFilter','derFilter','minAdoption','goalFilter','strategyFilter'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{minValue.textContent=`${minAdoption.value}%`;render();}));
+campaignObjective?.addEventListener('input', render);
 init();
