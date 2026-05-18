@@ -15,7 +15,127 @@ const kpiCards=document.getElementById('kpiCards');
 
 const countyMap=document.getElementById('countyMap');
 const countyDetail=document.getElementById('countyDetail');
-const countyPos={Roanoke:[245,250],Loudoun:[500,85],Fairfax:[535,115],'Prince William':[500,130],Arlington:[555,95],Alexandria:[570,105],'Richmond City':[610,200],Henrico:[595,190],Chesterfield:[600,220],'Newport News':[740,230],Norfolk:[770,245],'Virginia Beach':[790,255],Charlottesville:[430,185]};
+const VA_BOUNDS = {
+  minLon: -83.75,
+  maxLon: -75.10,
+  minLat: 36.45,
+  maxLat: 39.55
+};
+
+function projectVA(lon, lat) {
+  const width = 860;
+  const height = 280;
+  const padX = 20;
+  const padY = 20;
+
+  const x = padX + ((lon - VA_BOUNDS.minLon) / (VA_BOUNDS.maxLon - VA_BOUNDS.minLon)) * width;
+  const y = padY + ((VA_BOUNDS.maxLat - lat) / (VA_BOUNDS.maxLat - VA_BOUNDS.minLat)) * height;
+
+  return [x, y];
+}
+
+const countyGeo = {
+  Roanoke: [-79.94, 37.27],
+  Charlottesville: [-78.48, 38.03],
+
+  Loudoun: [-77.65, 39.08],
+  Fairfax: [-77.28, 38.85],
+  "Prince William": [-77.49, 38.70],
+  Arlington: [-77.10, 38.88],
+  Alexandria: [-77.05, 38.82],
+
+  "Richmond City": [-77.44, 37.54],
+  Henrico: [-77.40, 37.57],
+  Chesterfield: [-77.58, 37.38],
+
+  "Newport News": [-76.52, 37.08],
+  Norfolk: [-76.29, 36.85],
+  "Virginia Beach": [-76.01, 36.85]
+};
+
+const labelOffset = {
+  Roanoke: [14, 4],
+  Charlottesville: [14, 4],
+
+  Loudoun: [14, -8],
+  Fairfax: [14, 4],
+  "Prince William": [14, 16],
+  Arlington: [14, -10],
+  Alexandria: [14, 14],
+
+  "Richmond City": [14, 4],
+  Henrico: [14, -10],
+  Chesterfield: [14, 16],
+
+  "Newport News": [14, -8],
+  Norfolk: [14, 4],
+  "Virginia Beach": [14, 16]
+};
+
+const VA_MAINLAND_OUTLINE = [
+  [-83.67, 36.60],
+  [-82.90, 36.58],
+  [-82.20, 36.59],
+  [-81.40, 36.58],
+  [-80.55, 36.56],
+  [-79.70, 36.55],
+  [-78.80, 36.55],
+  [-77.95, 36.55],
+  [-77.20, 36.55],
+  [-76.70, 36.55],
+  [-76.25, 36.58],
+  [-75.95, 36.75],
+  [-76.10, 36.95],
+  [-76.35, 37.10],
+  [-76.45, 37.28],
+  [-76.62, 37.42],
+  [-76.35, 37.62],
+  [-76.22, 37.82],
+  [-76.40, 38.00],
+  [-76.65, 38.12],
+  [-76.92, 38.28],
+  [-77.18, 38.50],
+  [-77.38, 38.72],
+  [-77.75, 38.95],
+  [-78.05, 39.18],
+  [-78.35, 39.45],
+  [-78.70, 39.25],
+  [-79.05, 39.05],
+  [-79.25, 38.78],
+  [-79.55, 38.55],
+  [-79.85, 38.42],
+  [-80.18, 38.28],
+  [-80.50, 38.00],
+  [-80.85, 37.82],
+  [-81.20, 37.60],
+  [-81.55, 37.35],
+  [-81.95, 37.18],
+  [-82.30, 36.98],
+  [-82.72, 36.82],
+  [-83.20, 36.68],
+  [-83.67, 36.60]
+];
+
+const VA_EASTERN_SHORE_OUTLINE = [
+  [-75.95, 38.05],
+  [-75.70, 37.88],
+  [-75.58, 37.55],
+  [-75.66, 37.22],
+  [-75.88, 37.02],
+  [-76.04, 37.18],
+  [-76.02, 37.55],
+  [-75.95, 38.05]
+];
+
+function pathFromLonLat(points) {
+  return points
+    .map(([lon, lat], i) => {
+      const [x, y] = projectVA(lon, lat);
+      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ") + " Z";
+}
+
 
 function recommend(h){
   const adoption=clamp(0.2*clamp((h.income-30000)/170000,0,1)+0.2*clamp(h.peak57/12,0,1)+0.15*h.engagement+0.1*(h.ev?0.95:0.6)+0.1*(1-h.smartThermostat*0.2)+0.1*h.financingAcceptance+0.15*h.solarSuitability,0,1);
@@ -63,10 +183,37 @@ function renderCountyMap(rows,key){
   })).sort((a,b)=>b.avgPriority-a.avgPriority);
 
   countyMap.innerHTML='';
-  countyMap.innerHTML += `<path d="M55,290 L105,282 L150,266 L188,242 L220,212 L255,185 L292,165 L330,145 L360,112 L392,76 L430,42 L470,2 L512,38 L548,72 L565,38 L596,44 L615,70 L648,80 L676,105 L710,128 L738,160 L762,190 L792,215 L826,232 L858,258 L900,282 L882,306 L760,309 L640,311 L520,311 L400,309 L285,306 L178,300 L55,290 Z" fill="#eef4ff" stroke="#1e3a8a" stroke-width="3" stroke-linejoin="round"/>`;
+  countyMap.innerHTML += `
+  <path
+    d="${pathFromLonLat(VA_MAINLAND_OUTLINE)}"
+    fill="#eef4ff"
+    stroke="#1e3a8a"
+    stroke-width="3"
+    stroke-linejoin="round"
+  />
+
+  <path
+    d="${pathFromLonLat(VA_EASTERN_SHORE_OUTLINE)}"
+    fill="#eef4ff"
+    stroke="#1e3a8a"
+    stroke-width="3"
+    stroke-linejoin="round"
+  />
+`;
   stats.forEach((c,i)=>{
-    const p=countyPos[c.county]||[90+((i*60)%760),80+((i*35)%180)];
-    countyMap.innerHTML += `<g class="county-marker" data-county="${c.county}" tabindex="0"><circle cx="${p[0]}" cy="${p[1]}" r="12"></circle><text x="${p[0]+16}" y="${p[1]+4}">${c.county}</text></g>`;
+    const geo = countyGeo[c.county];
+    const p = geo
+      ? projectVA(geo[0], geo[1])
+      : [90 + ((i * 60) % 760), 80 + ((i * 35) % 180)];
+
+    const offset = labelOffset[c.county] || [16, 4];
+
+    countyMap.innerHTML += `
+  <g class="county-marker" data-county="${c.county}" tabindex="0">
+    <circle cx="${p[0]}" cy="${p[1]}" r="12"></circle>
+    <text x="${p[0] + offset[0]}" y="${p[1] + offset[1]}">${c.county}</text>
+  </g>
+`;
   });
   const showCounty=(county)=>{
     const c=stats.find(x=>x.county===county);
