@@ -34,28 +34,28 @@ function projectVA(lon, lat) {
   return [x, y];
 }
 
-const countyGeo = {
-  Roanoke: [-79.94, 37.27],
-  Charlottesville: [-78.48, 38.03],
+const countyPos = {
+  Roanoke: [355, 225],
+  Charlottesville: [465, 175],
 
-  Loudoun: [-77.65, 39.08],
-  Fairfax: [-77.28, 38.85],
-  "Prince William": [-77.49, 38.70],
-  Arlington: [-77.10, 38.88],
-  Alexandria: [-77.05, 38.82],
+  Loudoun: [575, 70],
+  Fairfax: [615, 95],
+  "Prince William": [600, 120],
+  Arlington: [635, 88],
+  Alexandria: [648, 105],
 
-  "Richmond City": [-77.44, 37.54],
-  Henrico: [-77.40, 37.57],
-  Chesterfield: [-77.58, 37.38],
+  "Richmond City": [610, 220],
+  Henrico: [620, 205],
+  Chesterfield: [600, 235],
 
-  "Newport News": [-76.52, 37.08],
-  Norfolk: [-76.29, 36.85],
-  "Virginia Beach": [-76.01, 36.85]
+  "Newport News": [720, 245],
+  Norfolk: [745, 270],
+  "Virginia Beach": [770, 265]
 };
 
 const labelOffset = {
-  Roanoke: [14, 4],
-  Charlottesville: [14, 4],
+  Roanoke: [16, 4],
+  Charlottesville: [16, 4],
 
   Loudoun: [14, -8],
   Fairfax: [14, 4],
@@ -201,10 +201,7 @@ function renderCountyMap(rows,key){
   />
 `;
   stats.forEach((c,i)=>{
-    const geo = countyGeo[c.county];
-    const p = geo
-      ? projectVA(geo[0], geo[1])
-      : [90 + ((i * 60) % 760), 80 + ((i * 35) % 180)];
+    const p = countyPos[c.county] || [90 + ((i * 60) % 760), 80 + ((i * 35) % 180)];
 
     const offset = labelOffset[c.county] || [16, 4];
 
