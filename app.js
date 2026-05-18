@@ -14,6 +14,7 @@ const rowsEl=document.getElementById('rows');
 const detail=document.getElementById('detail');
 const kpiCards=document.getElementById('kpiCards');
 const campaignCards=document.getElementById('campaignCards');
+const campaignKpiCards=document.getElementById('campaignKpiCards');
 
 const countyMap=document.getElementById('countyMap');
 const countyDetail=document.getElementById('countyDetail');
@@ -471,7 +472,9 @@ function buildCampaigns(rows){
 function renderCampaigns(rows){
   if(!campaignCards) return;
   const objectiveLabel = campaignObjective?.options?.[campaignObjective.selectedIndex]?.text || 'Maximize Adoption';
-  const campaigns = buildCampaigns(rows).slice(0, 6);
+  const allCampaigns = buildCampaigns(rows);
+  const campaigns = allCampaigns.slice(0, 6);
+  renderCampaignKPIs(allCampaigns);
   if(!campaigns.length){
     campaignCards.innerHTML = "<div class='card'>No campaign candidates for the current filters.</div>";
     return;
@@ -499,6 +502,32 @@ function renderCampaigns(rows){
       </div>
     </article>
   `).join('');
+}
+
+function renderCampaignKPIs(campaigns){
+  if(!campaignKpiCards) return;
+  const list = Array.isArray(campaigns) ? campaigns : [];
+  if(!list.length){
+    campaignKpiCards.innerHTML = '';
+    return;
+  }
+
+  const totalCampaignableHouseholds = list.reduce((sum, c) => sum + (c.audienceSize || 0), 0);
+  const numberOfCampaignSegments = list.length;
+  const topRecommendedCampaign = list[0]?.campaignName || 'n/a';
+  const averageBarrierSeverity = list.reduce((sum, c) => sum + (c.avgBarrierScore || 0), 0) / numberOfCampaignSegments;
+  const estimatedTotalCampaignBudget = list.reduce((sum, c) => sum + (c.estimatedCampaignCost || 0), 0);
+  const expectedTotalAdoptionLift = list.reduce((sum, c) => sum + ((c.expectedAdoptionLift || 0) * (c.audienceSize || 0)), 0) / Math.max(totalCampaignableHouseholds, 1);
+
+  const kpis = [
+    ['Total campaignable households', totalCampaignableHouseholds.toLocaleString()],
+    ['Number of campaign segments', numberOfCampaignSegments.toLocaleString()],
+    ['Top recommended campaign', topRecommendedCampaign],
+    ['Average barrier severity', `${averageBarrierSeverity.toFixed(1)}`],
+    ['Estimated total campaign budget', `$${Math.round(estimatedTotalCampaignBudget).toLocaleString()}`],
+    ['Expected total adoption lift', `${(expectedTotalAdoptionLift * 100).toFixed(1)}%`]
+  ];
+  campaignKpiCards.innerHTML = kpis.map(([k,v])=>`<div class='card'>${k}<b>${v}</b></div>`).join('');
 }
 
 
