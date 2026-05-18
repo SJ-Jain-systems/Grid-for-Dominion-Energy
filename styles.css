@@ -8,6 +8,8 @@ main{max-width:1200px;margin:0 auto;padding:18px;display:grid;gap:14px}
 .panel{border:1px solid var(--line);border-radius:12px;padding:14px;background:linear-gradient(180deg,#fff 0%,#fdfefe 100%);box-shadow:0 4px 12px rgba(19,46,102,.05)}
 .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;align-items:end}
 label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)} select,input{padding:8px;border:1px solid #bfd0ee;border-radius:8px;background:#fff;color:var(--text)}
+button{padding:8px 12px;border:1px solid #bfd0ee;border-radius:8px;background:#eef4ff;color:#153368;font-weight:600;cursor:pointer}
+button:hover{background:#e3edff}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.insights{display:grid;grid-template-columns:1fr;gap:8px}.insight{border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--light)}
 .geo{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}.geo-card{border:1px solid var(--line);border-radius:8px;padding:8px;background:#fbfdff}
 @media (max-width:900px){.grid2{grid-template-columns:1fr}}
