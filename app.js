@@ -138,6 +138,39 @@ function pathFromLonLat(points) {
 
 
 
+
+const barrierLabelMap = {
+  upfrontCostFriction: 'Upfront Cost Friction',
+  installerTrustIssues: 'Installer Trust Issues',
+  decisionFatigue: 'Decision Fatigue',
+  rebateConfusion: 'Rebate Confusion',
+  lowROIClarity: 'Low ROI Clarity',
+  lowUrgency: 'Low Urgency',
+  highEnergyBurden: 'High Energy Burden',
+  chargingAccessBarrier: 'Charging Access Barrier',
+  homeSuitabilityBarrier: 'Home Suitability Barrier',
+  ratePlanConfusion: 'Rate Plan Confusion'
+};
+
+function getDominantBarrier(barriers){
+  const entries = Object.entries(barriers || {});
+  if(!entries.length){
+    return {
+      barrierKey: null,
+      barrierLabel: null,
+      barrierScore: 0
+    };
+  }
+  const [barrierKey, barrierScore] = entries.reduce((maxEntry, entry) =>
+    entry[1] > maxEntry[1] ? entry : maxEntry
+  );
+  return {
+    barrierKey,
+    barrierLabel: barrierLabelMap[barrierKey] || barrierKey,
+    barrierScore
+  };
+}
+
 function scoreBarriers(h){
   const owner = h.renterOwner === 'owner';
   const renterPenalty = owner ? 0 : 1;
@@ -256,7 +289,27 @@ function recommend(h){
   const gridPriority=((gridValue*adoption*1.2)/Math.sqrt(incentiveCost))*(1-friction*0.5);
   const affordabilityPriority=((affordability*adoption*1.1)/incentiveCost)*(1-friction*0.7);
   const when=h.peak57>9?"2-4 weeks before summer peak season":(h.ev?"Immediately after EV onboarding":"During monthly bill cycle");
-  return {...h,adoption,gridValue,affordability,adoptionPriority,gridPriority,affordabilityPriority,tech,msg,financing,incentive,when,why};
+  const barriers = scoreBarriers(h);
+  const dominantBarrier = getDominantBarrier(barriers);
+  return {
+    ...h,
+    adoption,
+    gridValue,
+    affordability,
+    adoptionPriority,
+    gridPriority,
+    affordabilityPriority,
+    tech,
+    msg,
+    financing,
+    incentive,
+    when,
+    why,
+    barriers,
+    dominantBarrier,
+    dominantBarrierLabel: dominantBarrier.barrierLabel,
+    dominantBarrierScore: dominantBarrier.barrierScore
+  };
 }
 
 function getPriorityKey(){const s=strategyFilter.value;return s==='grid'?'gridPriority':s==='affordability'?'affordabilityPriority':'adoptionPriority';}
