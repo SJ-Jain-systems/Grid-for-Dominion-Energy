@@ -1,6 +1,6 @@
 let households = [];
 const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
-const TABLE_LIMIT = 50;
+const TABLE_LIMIT = 25;
 
 const countyFilter=document.getElementById('countyFilter');
 const incomeFilter=document.getElementById('incomeFilter');
