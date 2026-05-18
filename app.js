@@ -564,11 +564,7 @@ function renderCampaigns(rows){
         <p class="campaign-row"><span>Barrier</span><b>${c.barrierLabel}</b></p>
         <p class="campaign-row"><span>Dominion Offer</span><b>${c.recommendedOffering}</b></p>
         <p class="campaign-row"><span>Best-fit DER</span><b>${c.tech}</b></p>
-        <p class="campaign-row"><span>Avg Barrier Score</span><b>${c.avgBarrierScore.toFixed(1)}</b></p>
-        <p class="campaign-row"><span>Avg Priority</span><b>${c.avgPriorityScore.toFixed(2)}</b></p>
-        <p class="campaign-row"><span>Estimated Cost</span><b>$${Math.round(c.estimatedCampaignCost).toLocaleString()}</b></p>
         <p class="campaign-row"><span>Expected Lift</span><b>${(c.expectedAdoptionLift * 100).toFixed(1)}%</b></p>
-        <p class="campaign-row"><span>Message</span><b>${c.recommendedMessage}</b></p>
         <p class="campaign-row"><span>Timing</span><b>${c.recommendedTiming}</b></p>
       </div>
       <p class="campaign-explanation">
