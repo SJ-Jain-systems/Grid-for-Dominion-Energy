@@ -691,7 +691,7 @@ function render(){
   const focus=topRows[0];
   detail.innerHTML=focus ? renderDetail(focus) : 'No households match the current filters.';
   renderCampaigns(rows);
-  renderCountyMap(topRows,key);
+  renderCountyMap(rows,key);
 
 }
 
