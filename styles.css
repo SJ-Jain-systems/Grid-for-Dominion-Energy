@@ -36,9 +36,9 @@ button:hover{background:#e3edff}
 .campaign-card h3{margin:0;color:var(--ink);font-size:15px}
 .campaign-card-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
 .launch-badge{font-size:11px;font-weight:600;color:#fff;background:var(--blue);padding:4px 8px;border-radius:999px;white-space:nowrap}
-.campaign-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px}
-.campaign-grid p{margin:0;padding:7px;border:1px solid var(--line);border-radius:8px;background:#f8fbff}
-.campaign-grid span{display:block;font-size:11px;color:var(--muted);margin-bottom:2px}
-.campaign-grid b{display:block;font-size:12px;color:var(--text);font-weight:600}
-.campaign-explanation{margin:10px 0 0 0;padding:10px 12px;border-radius:8px;background:#f8fbff;border:1px solid var(--line);font-size:13px;line-height:1.45;color:var(--text)}
-@media (max-width:700px){.campaign-grid{grid-template-columns:1fr}}
+.campaign-rows{display:flex;flex-direction:column;gap:8px}
+.campaign-row{margin:0;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:#f8fbff;display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.campaign-row span{display:block;font-size:11px;color:var(--muted);line-height:1.3;flex:0 0 145px}
+.campaign-row b{display:block;font-size:12px;color:var(--text);font-weight:600;line-height:1.35;text-align:right;flex:1}
+.campaign-explanation{margin:12px 0 0 0;padding:12px;border-radius:8px;background:#f8fbff;border:1px solid var(--line);font-size:13px;line-height:1.5;color:var(--text)}
+@media (max-width:700px){.campaign-row{flex-direction:column;gap:4px}.campaign-row span{flex:initial}.campaign-row b{text-align:left}}
