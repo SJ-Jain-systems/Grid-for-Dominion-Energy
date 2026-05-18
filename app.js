@@ -171,6 +171,33 @@ function getDominantBarrier(barriers){
   };
 }
 
+
+const barrierOfferMap = {
+  upfrontCostFriction: '0% on-bill financing',
+  installerTrustIssues: 'Dominion-vetted installer marketplace',
+  decisionFatigue: 'Switching concierge',
+  rebateConfusion: 'Automatic rebate matching',
+  lowROIClarity: 'Personalized savings estimate',
+  lowUrgency: 'Limited-time bill credit',
+  highEnergyBurden: 'Income-qualified upgrade package',
+  chargingAccessBarrier: 'EV charging access program',
+  homeSuitabilityBarrier: 'Smart panel/assessment package',
+  ratePlanConfusion: 'Off-peak enrollment recommendation'
+};
+
+const offeringExplanationMap = {
+  upfrontCostFriction: '0% on-bill financing removes upfront payment pressure by spreading costs into predictable monthly bill amounts.',
+  installerTrustIssues: 'A Dominion-vetted installer marketplace reduces perceived risk by emphasizing trusted quality standards and accountability.',
+  decisionFatigue: 'A switching concierge reduces complexity by guiding households through choices, steps, and paperwork end to end.',
+  rebateConfusion: 'Automatic rebate matching lowers confusion by identifying and applying relevant rebates without manual searching.',
+  lowROIClarity: 'A personalized savings estimate improves confidence by translating household characteristics into clear expected savings.',
+  lowUrgency: 'A limited-time bill credit creates an immediate reason to act, helping overcome procrastination and low perceived urgency.',
+  highEnergyBurden: 'An income-qualified upgrade package targets high-burden households with affordability-focused support for impactful upgrades.',
+  chargingAccessBarrier: 'An EV charging access program addresses charging constraints with practical options for households lacking easy home charging.',
+  homeSuitabilityBarrier: 'A smart panel/assessment package identifies technical constraints early and defines a feasible upgrade pathway.',
+  ratePlanConfusion: 'An off-peak enrollment recommendation simplifies rate decisions by pointing households to the most relevant time-based option.'
+};
+
 function scoreBarriers(h){
   const owner = h.renterOwner === 'owner';
   const renterPenalty = owner ? 0 : 1;
@@ -291,6 +318,8 @@ function recommend(h){
   const when=h.peak57>9?"2-4 weeks before summer peak season":(h.ev?"Immediately after EV onboarding":"During monthly bill cycle");
   const barriers = scoreBarriers(h);
   const dominantBarrier = getDominantBarrier(barriers);
+  const recommendedOffering = barrierOfferMap[dominantBarrier.barrierKey] || 'Standard energy advisor outreach';
+  const recommendedOfferingExplanation = offeringExplanationMap[dominantBarrier.barrierKey] || "This offering is selected to reduce the household's highest adoption barrier.";
   return {
     ...h,
     adoption,
@@ -308,7 +337,9 @@ function recommend(h){
     barriers,
     dominantBarrier,
     dominantBarrierLabel: dominantBarrier.barrierLabel,
-    dominantBarrierScore: dominantBarrier.barrierScore
+    dominantBarrierScore: dominantBarrier.barrierScore,
+    recommendedOffering,
+    recommendedOfferingExplanation
   };
 }
 
