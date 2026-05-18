@@ -12,6 +12,7 @@ const strategyFilter=document.getElementById('strategyFilter');
 const rowsEl=document.getElementById('rows');
 const detail=document.getElementById('detail');
 const kpiCards=document.getElementById('kpiCards');
+const campaignCards=document.getElementById('campaignCards');
 
 const countyMap=document.getElementById('countyMap');
 const countyDetail=document.getElementById('countyDetail');
@@ -425,6 +426,36 @@ function buildCampaigns(rows){
   return campaigns.sort((a,b)=>b.campaignScore-a.campaignScore);
 }
 
+function renderCampaigns(rows){
+  if(!campaignCards) return;
+  const campaigns = buildCampaigns(rows).slice(0, 6);
+  if(!campaigns.length){
+    campaignCards.innerHTML = "<div class='card'>No campaign candidates for the current filters.</div>";
+    return;
+  }
+
+  campaignCards.innerHTML = campaigns.map((c, idx) => `
+    <article class="card campaign-card">
+      <div class="campaign-card-head">
+        <h3>${c.campaignName}</h3>
+        ${idx < 3 ? '<span class="launch-badge">Launch Candidate</span>' : ''}
+      </div>
+      <div class="campaign-grid">
+        <p><span>Audience</span><b>${c.audienceSize.toLocaleString()}</b></p>
+        <p><span>Barrier</span><b>${c.barrierLabel}</b></p>
+        <p><span>Dominion Offer</span><b>${c.recommendedOffering}</b></p>
+        <p><span>Best-fit DER</span><b>${c.tech}</b></p>
+        <p><span>Avg Barrier Score</span><b>${c.avgBarrierScore.toFixed(1)}</b></p>
+        <p><span>Avg Priority</span><b>${c.avgPriorityScore.toFixed(2)}</b></p>
+        <p><span>Estimated Cost</span><b>$${Math.round(c.estimatedCampaignCost).toLocaleString()}</b></p>
+        <p><span>Expected Lift</span><b>${(c.expectedAdoptionLift * 100).toFixed(1)}%</b></p>
+        <p><span>Message</span><b>${c.recommendedMessage}</b></p>
+        <p><span>Timing</span><b>${c.recommendedTiming}</b></p>
+      </div>
+    </article>
+  `).join('');
+}
+
 
 function countyInitiative(topTech){
   return ({
@@ -515,6 +546,7 @@ function render(){
 
   const focus=topRows[0];
   detail.innerHTML=focus ? renderDetail(focus) : 'No households match the current filters.';
+  renderCampaigns(rows);
   renderCountyMap(topRows,key);
 
 }
