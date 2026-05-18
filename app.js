@@ -10,11 +10,13 @@ const minAdoption=document.getElementById('minAdoption');
 const minValue=document.getElementById('minValue');
 const strategyFilter=document.getElementById('strategyFilter');
 const campaignObjective=document.getElementById('campaignObjective');
+const exportCampaignPlanBtn=document.getElementById('exportCampaignPlanBtn');
 const rowsEl=document.getElementById('rows');
 const detail=document.getElementById('detail');
 const kpiCards=document.getElementById('kpiCards');
 const campaignCards=document.getElementById('campaignCards');
 const campaignKpiCards=document.getElementById('campaignKpiCards');
+let displayedCampaigns = [];
 
 const countyMap=document.getElementById('countyMap');
 const countyDetail=document.getElementById('countyDetail');
@@ -469,11 +471,80 @@ function buildCampaigns(rows){
   return campaigns.sort((a,b)=>b.campaignScore-a.campaignScore);
 }
 
+function campaignTimingReason(timing, campaign){
+  const reasons = {
+    'Before summer peak': `this segment shows elevated summer load risk and can capture demand reduction before peak-season system stress`,
+    'Before winter heating season': `winter bill pressure is highest for this segment, so pre-season enrollment improves readiness before heating demand rises`,
+    'During monthly bill cycle': `bill statements create a predictable decision window when households are most attentive to energy costs and enrollment options`,
+    'After outage events': `recent outage awareness increases receptivity to resilience-focused upgrades and faster enrollment follow-through`,
+    'At equipment replacement moments': `customers are more likely to adopt when a replacement decision is already underway`
+  };
+  return reasons[timing] || `this window aligns with observed customer decision timing across the segment`;
+}
+
+function toCsvField(value){
+  const text = value == null ? '' : String(value);
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function exportCampaignPlanCsv(campaigns){
+  const rows = Array.isArray(campaigns) ? campaigns : [];
+  if(!rows.length) return;
+
+  const columns = [
+    'campaignName',
+    'audienceSize',
+    'dominantBarrier',
+    'recommendedOffering',
+    'tech',
+    'avgPriorityScore',
+    'avgBarrierScore',
+    'avgEnergyBurden',
+    'dominantCounty',
+    'estimatedCampaignCost',
+    'expectedAdoptionLift',
+    'recommendedMessage',
+    'recommendedTiming'
+  ];
+
+  const csvLines = [columns.join(',')];
+  rows.forEach((c) => {
+    const values = [
+      c.campaignName,
+      c.audienceSize,
+      c.barrierLabel,
+      c.recommendedOffering,
+      c.tech,
+      Number(c.avgPriorityScore || 0).toFixed(2),
+      Number(c.avgBarrierScore || 0).toFixed(1),
+      Number(c.avgEnergyBurden || 0).toFixed(1),
+      c.dominantCounty,
+      Math.round(c.estimatedCampaignCost || 0),
+      Number(c.expectedAdoptionLift || 0).toFixed(4),
+      c.recommendedMessage,
+      c.recommendedTiming
+    ];
+    csvLines.push(values.map(toCsvField).join(','));
+  });
+
+  const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const timestamp = new Date().toISOString().slice(0, 10);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `campaign-plan-${timestamp}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 function renderCampaigns(rows){
   if(!campaignCards) return;
   const objectiveLabel = campaignObjective?.options?.[campaignObjective.selectedIndex]?.text || 'Maximize Adoption';
   const allCampaigns = buildCampaigns(rows);
   const campaigns = allCampaigns.slice(0, 6);
+  displayedCampaigns = campaigns;
   renderCampaignKPIs(allCampaigns);
   if(!campaigns.length){
     campaignCards.innerHTML = "<div class='card'>No campaign candidates for the current filters.</div>";
@@ -500,6 +571,9 @@ function renderCampaigns(rows){
         <p><span>Message</span><b>${c.recommendedMessage}</b></p>
         <p><span>Timing</span><b>${c.recommendedTiming}</b></p>
       </div>
+      <p class="campaign-explanation">
+        This campaign targets <b>${c.audienceSize.toLocaleString()}</b> households whose main adoption barrier is <b>${c.barrierLabel}</b>. The recommended DER pathway is <b>${c.tech}</b>, and the best Dominion intervention is <b>${c.recommendedOffering}</b>. This campaign should use <b>${c.recommendedMessage}</b> messaging and launch <b>${c.recommendedTiming}</b> because ${campaignTimingReason(c.recommendedTiming, c)}.
+      </p>
     </article>
   `).join('');
 }
@@ -633,4 +707,5 @@ async function init(){
 }
 ['countyFilter','incomeFilter','derFilter','minAdoption','goalFilter','strategyFilter'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{minValue.textContent=`${minAdoption.value}%`;render();}));
 campaignObjective?.addEventListener('input', render);
+exportCampaignPlanBtn?.addEventListener('click', ()=>exportCampaignPlanCsv(displayedCampaigns));
 init();
