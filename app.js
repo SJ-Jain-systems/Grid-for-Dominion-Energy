@@ -137,6 +137,171 @@ function pathFromLonLat(points) {
 }
 
 
+
+
+const barrierLabelMap = {
+  upfrontCostFriction: 'Upfront Cost Friction',
+  installerTrustIssues: 'Installer Trust Issues',
+  decisionFatigue: 'Decision Fatigue',
+  rebateConfusion: 'Rebate Confusion',
+  lowROIClarity: 'Low ROI Clarity',
+  lowUrgency: 'Low Urgency',
+  highEnergyBurden: 'High Energy Burden',
+  chargingAccessBarrier: 'Charging Access Barrier',
+  homeSuitabilityBarrier: 'Home Suitability Barrier',
+  ratePlanConfusion: 'Rate Plan Confusion'
+};
+
+function getDominantBarrier(barriers){
+  const entries = Object.entries(barriers || {});
+  if(!entries.length){
+    return {
+      barrierKey: null,
+      barrierLabel: null,
+      barrierScore: 0
+    };
+  }
+  const [barrierKey, barrierScore] = entries.reduce((maxEntry, entry) =>
+    entry[1] > maxEntry[1] ? entry : maxEntry
+  );
+  return {
+    barrierKey,
+    barrierLabel: barrierLabelMap[barrierKey] || barrierKey,
+    barrierScore
+  };
+}
+
+
+const barrierOfferMap = {
+  upfrontCostFriction: '0% on-bill financing',
+  installerTrustIssues: 'Dominion-vetted installer marketplace',
+  decisionFatigue: 'Switching concierge',
+  rebateConfusion: 'Automatic rebate matching',
+  lowROIClarity: 'Personalized savings estimate',
+  lowUrgency: 'Limited-time bill credit',
+  highEnergyBurden: 'Income-qualified upgrade package',
+  chargingAccessBarrier: 'EV charging access program',
+  homeSuitabilityBarrier: 'Smart panel/assessment package',
+  ratePlanConfusion: 'Off-peak enrollment recommendation'
+};
+
+const offeringExplanationMap = {
+  upfrontCostFriction: '0% on-bill financing removes upfront payment pressure by spreading costs into predictable monthly bill amounts.',
+  installerTrustIssues: 'A Dominion-vetted installer marketplace reduces perceived risk by emphasizing trusted quality standards and accountability.',
+  decisionFatigue: 'A switching concierge reduces complexity by guiding households through choices, steps, and paperwork end to end.',
+  rebateConfusion: 'Automatic rebate matching lowers confusion by identifying and applying relevant rebates without manual searching.',
+  lowROIClarity: 'A personalized savings estimate improves confidence by translating household characteristics into clear expected savings.',
+  lowUrgency: 'A limited-time bill credit creates an immediate reason to act, helping overcome procrastination and low perceived urgency.',
+  highEnergyBurden: 'An income-qualified upgrade package targets high-burden households with affordability-focused support for impactful upgrades.',
+  chargingAccessBarrier: 'An EV charging access program addresses charging constraints with practical options for households lacking easy home charging.',
+  homeSuitabilityBarrier: 'A smart panel/assessment package identifies technical constraints early and defines a feasible upgrade pathway.',
+  ratePlanConfusion: 'An off-peak enrollment recommendation simplifies rate decisions by pointing households to the most relevant time-based option.'
+};
+
+function scoreBarriers(h){
+  const owner = h.renterOwner === 'owner';
+  const renterPenalty = owner ? 0 : 1;
+  const multifamilyPenalty = h.multifamily ? 1 : 0;
+  const noDrivewayPenalty = h.garageOrDriveway ? 0 : 1;
+
+  const installerQualityGap = clamp(5 - h.installerAvgRating, 0, 2);
+  const complaintIntensity = clamp(h.installerComplaintCount / Math.max(h.installerCount25mi, 1), 0, 3);
+  const programComplexity = clamp((h.requiredStepCount - 2) / 8, 0, 1);
+  const rebateAutomationGap = clamp((h.rebateCount - h.autoMatchedRebateCount) / Math.max(h.rebateCount, 1), 0, 1);
+
+  const financingGap = clamp(1 - h.financingAcceptance, 0, 1);
+  const incomePressure = clamp((90000 - h.income) / 90000, 0, 1);
+  const installCostPressure = clamp((h.estimatedInstallCost - 12000) / 20000, 0, 1);
+  const lowHomeValueBuffer = clamp((350000 - h.homeValue) / 350000, 0, 1);
+
+  const roiUncertainty = clamp(1 - h.savingsEstimateConfidence, 0, 1);
+  const suitabilityGap = clamp(1 - ((h.roofSuitability + h.solarSuitability) / 2), 0, 1);
+  const panelConstraint = clamp((150 - h.panelCapacityProxy) / 90, 0, 1);
+
+  const burdenLow = clamp((6 - h.energyBurden) / 6, 0, 1);
+  const burdenHigh = clamp((h.energyBurden - 4) / 6, 0, 1);
+  const efficientHomeSignal = clamp((10 - h.applianceAge) / 10, 0, 1);
+
+  const offPeakAvailable = h.offPeakEligible ? 1 : 0;
+  const offPeakNotEnrolled = h.offPeakEligible && !h.offPeakEnrolled ? 1 : 0;
+  const complexity = clamp((h.usageComplexity - 1) / 4, 0, 1);
+
+  return {
+    upfrontCostFriction: clamp(100 * (
+      0.34 * financingGap +
+      0.24 * incomePressure +
+      0.22 * installCostPressure +
+      0.12 * lowHomeValueBuffer +
+      0.08 * renterPenalty
+    ), 0, 100),
+
+    installerTrustIssues: clamp(100 * (
+      0.40 * (installerQualityGap / 2) +
+      0.35 * (complaintIntensity / 3) +
+      0.15 * clamp((40 - h.installerCount25mi) / 40, 0, 1) +
+      0.10 * (h.priorEnrollment ? 0 : clamp(h.priorEligibilityCount / 4, 0, 1))
+    ), 0, 100),
+
+    decisionFatigue: clamp(100 * (
+      0.42 * programComplexity +
+      0.24 * complexity +
+      0.18 * clamp(h.eligibleProgramCount / 7, 0, 1) +
+      0.16 * clamp(h.priorEligibilityCount / 5, 0, 1)
+    ), 0, 100),
+
+    rebateConfusion: clamp(100 * (
+      0.45 * rebateAutomationGap +
+      0.30 * clamp(h.rebateCount / 5, 0, 1) +
+      0.15 * programComplexity +
+      0.10 * (h.priorEnrollment ? 0 : 1)
+    ), 0, 100),
+
+    lowROIClarity: clamp(100 * (
+      0.50 * roiUncertainty +
+      0.22 * suitabilityGap +
+      0.16 * panelConstraint +
+      0.12 * clamp((h.homeAge - 25) / 35, 0, 1)
+    ), 0, 100),
+
+    lowUrgency: clamp(100 * (
+      0.55 * burdenLow +
+      0.20 * efficientHomeSignal +
+      0.15 * (h.ev ? 0 : 1) +
+      0.10 * (offPeakAvailable ? 0.5 : 0)
+    ), 0, 100),
+
+    highEnergyBurden: clamp(100 * (
+      0.75 * burdenHigh +
+      0.15 * incomePressure +
+      0.10 * clamp((h.peak57 - 7) / 6, 0, 1)
+    ), 0, 100),
+
+    chargingAccessBarrier: clamp(100 * (
+      0.30 * noDrivewayPenalty +
+      0.23 * renterPenalty +
+      0.20 * multifamilyPenalty +
+      0.17 * clamp(h.publicChargerDistance / 6, 0, 1) +
+      0.10 * (h.ev ? 0 : 0.5)
+    ), 0, 100),
+
+    homeSuitabilityBarrier: clamp(100 * (
+      0.36 * suitabilityGap +
+      0.22 * panelConstraint +
+      0.18 * multifamilyPenalty +
+      0.14 * renterPenalty +
+      0.10 * clamp((h.homeAge - 30) / 30, 0, 1)
+    ), 0, 100),
+
+    ratePlanConfusion: clamp(100 * (
+      0.32 * offPeakNotEnrolled +
+      0.25 * complexity +
+      0.18 * programComplexity +
+      0.15 * clamp(h.eligibleProgramCount / 7, 0, 1) +
+      0.10 * (h.priorEnrollment ? 0 : 1)
+    ), 0, 100)
+  };
+}
+
 function recommend(h){
   const adoption=clamp(0.2*clamp((h.income-30000)/170000,0,1)+0.2*clamp(h.peak57/12,0,1)+0.15*h.engagement+0.1*(h.ev?0.95:0.6)+0.1*(1-h.smartThermostat*0.2)+0.1*h.financingAcceptance+0.15*h.solarSuitability,0,1);
   const gridValue=h.peak57*(1+h.outageRisk*0.35)*(h.ev?1.2:1)*(1+h.applianceAge/25);
@@ -151,7 +316,31 @@ function recommend(h){
   const gridPriority=((gridValue*adoption*1.2)/Math.sqrt(incentiveCost))*(1-friction*0.5);
   const affordabilityPriority=((affordability*adoption*1.1)/incentiveCost)*(1-friction*0.7);
   const when=h.peak57>9?"2-4 weeks before summer peak season":(h.ev?"Immediately after EV onboarding":"During monthly bill cycle");
-  return {...h,adoption,gridValue,affordability,adoptionPriority,gridPriority,affordabilityPriority,tech,msg,financing,incentive,when,why};
+  const barriers = scoreBarriers(h);
+  const dominantBarrier = getDominantBarrier(barriers);
+  const recommendedOffering = barrierOfferMap[dominantBarrier.barrierKey] || 'Standard energy advisor outreach';
+  const recommendedOfferingExplanation = offeringExplanationMap[dominantBarrier.barrierKey] || "This offering is selected to reduce the household's highest adoption barrier.";
+  return {
+    ...h,
+    adoption,
+    gridValue,
+    affordability,
+    adoptionPriority,
+    gridPriority,
+    affordabilityPriority,
+    tech,
+    msg,
+    financing,
+    incentive,
+    when,
+    why,
+    barriers,
+    dominantBarrier,
+    dominantBarrierLabel: dominantBarrier.barrierLabel,
+    dominantBarrierScore: dominantBarrier.barrierScore,
+    recommendedOffering,
+    recommendedOfferingExplanation
+  };
 }
 
 function getPriorityKey(){const s=strategyFilter.value;return s==='grid'?'gridPriority':s==='affordability'?'affordabilityPriority':'adoptionPriority';}
