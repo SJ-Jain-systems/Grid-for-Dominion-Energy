@@ -110,15 +110,10 @@ These inputs are used to generate recommendation outputs:
 Because this is a static frontend, you can serve it with any local web server and open `index.html` in your browser.
 
 ## Roadmap 
-- Map
-- Quantifying the barrier vars
-- Start on the front end of Campaign Manager 
-- Creating another data set that takes into account both the barriers and our scraped county data
-- Focus on dominion offerings
-- Write up a paper by the 28th 
-  - Thesis
-  - Traction
-  - Current Usability
-  - Point is to address use case 
-    - Delivery to consumer 
-  - Future Use Case
+- Current action plans for the campaign manager takes average via parameter as the estimated cost value, debug, and replace with a specific plan value 
+  - Average barrier severity
+  - Estimated total campaign budget
+  - Expected total adoption lift
+- Separate Tab for Map and campaign manager 
+- More on the front end 
+
