@@ -16,62 +16,71 @@
   </header>
 
   <main>
-    <section class="panel awareness">
-      <h2>Why not just awareness?</h2>
-      <p>Traditional outreach assumes low DER adoption is caused by low awareness.</p>
-      <p><b>GRID</b> assumes the larger barrier is decision friction: uncertainty about fit, financing, timing, savings, and installation.</p>
-    </section>
-    <section class="cards" id="kpiCards"></section>
+    <nav class="tab-nav" aria-label="Main tabs">
+      <button class="tab-btn active" data-tab="targetingTab" type="button">Targeting Explorer</button>
+      <button class="tab-btn" data-tab="executionTab" type="button">Map + Campaign Manager</button>
+    </nav>
 
-    <section class="panel filters">
-      <label>County <select id="countyFilter"><option value="all">All</option></select></label>
-      <label>Income Band <select id="incomeFilter"><option value="all">All</option><option value="very-low">Very Low (&lt;$40k)</option><option value="low">Low ($40k-$80k)</option><option value="mid">Middle ($80k-$120k)</option><option value="upper-mid">Upper-middle ($120k-$180k)</option><option value="high">High (&gt;$180k)</option></select></label>
-      <label>DER Type <select id="derFilter"><option value="all">All</option><option>Smart Thermostat</option><option>Managed EV Charging</option><option>Weatherization Bundle</option><option>Smart Water Heater</option><option>Battery + Smart Panel</option></select></label>
-      <label>Targeting Strategy
-        <select id="strategyFilter">
-          <option value="adoption">Maximize Adoption</option>
-          <option value="grid">Maximize Grid Flexibility</option>
-          <option value="affordability">Maximize Affordability Impact</option>
-        </select>
-      </label>
-      <label>Minimum Adoption Score <input id="minAdoption" type="range" min="0" max="90" value="0" /><span id="minValue">0%</span></label>
-      <label>Outreach Goal <select id="goalFilter"><option value="all">All</option><option value="bill">Bill savings</option><option value="automation">Automation & convenience</option><option value="resilience">Resilience & outage protection</option></select></label>
-    </section>
+    <section id="targetingTab" class="tab-panel active">
+      <section class="panel awareness">
+        <h2>Why not just awareness?</h2>
+        <p>Traditional outreach assumes low DER adoption is caused by low awareness.</p>
+        <p><b>GRID</b> assumes the larger barrier is decision friction: uncertainty about fit, financing, timing, savings, and installation.</p>
+      </section>
 
+      <section class="cards" id="kpiCards"></section>
 
-    <section class="panel">
-      <h2>Main Recommendations (Top 25 Target Homes)</h2>
-      <table class="recommendations-table">
-        <thead><tr><th>Household</th><th>County</th><th>Priority</th><th>Tech</th><th>Message</th><th>Financing</th><th>Incentive</th><th>Contact Timing</th><th>Top Barrier</th><th>Barrier Score</th><th>Dominion Offer</th></tr></thead>
-        <tbody id="rows"></tbody>
-      </table>
-    </section>
+      <section class="panel filters">
+        <label>County <select id="countyFilter"><option value="all">All</option></select></label>
+        <label>Income Band <select id="incomeFilter"><option value="all">All</option><option value="very-low">Very Low (&lt;$40k)</option><option value="low">Low ($40k-$80k)</option><option value="mid">Middle ($80k-$120k)</option><option value="upper-mid">Upper-middle ($120k-$180k)</option><option value="high">High (&gt;$180k)</option></select></label>
+        <label>DER Type <select id="derFilter"><option value="all">All</option><option>Smart Thermostat</option><option>Managed EV Charging</option><option>Weatherization Bundle</option><option>Smart Water Heater</option><option>Battery + Smart Panel</option></select></label>
+        <label>Targeting Strategy
+          <select id="strategyFilter">
+            <option value="adoption">Maximize Adoption</option>
+            <option value="affordability">Maximize Affordability</option>
+            <option value="grid">Maximize Grid Flexibility</option>
+            <option value="readiness">Maximize Customer Readiness</option>
+          </select>
+        </label>
+        <label>Minimum Adoption Score <input id="minAdoption" type="range" min="0" max="90" value="0" /><span id="minValue">0%</span></label>
+        <label>Outreach Goal <select id="goalFilter"><option value="all">All</option><option value="bill">Bill savings</option><option value="automation">Automation & convenience</option><option value="resilience">Resilience & outage protection</option></select></label>
+      </section>
 
-    <section class="panel"><h2>Household Explanation</h2><div id="detail">Select a household to see an executive explanation.</div></section>
+      <section class="panel">
+        <h2>Main Recommendations (Top 25 Target Homes)</h2>
+        <table class="recommendations-table">
+          <thead><tr><th>Household</th><th>County</th><th>Priority</th><th>Tech</th><th>Message</th><th>Financing</th><th>Incentive</th><th>Contact Timing</th><th>Top Barrier</th><th>Barrier Score</th><th>Dominion Offer</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </section>
 
-    <section class="panel">
-      <h2>County DER Initiatives Map</h2>
-      <p>Click a county marker to view county-level DER initiative guidance.</p>
-      <svg id="countyMap" viewBox="0 0 900 340" class="county-map"></svg>
-      <div id="countyDetail" class="county-detail">Select a county to view DER initiative specifics.</div>
-    </section>
-
-    <section class="panel">
-      <h2>Campaign Manager</h2>
-      <p>Campaigns are built from dominant customer adoption barriers paired with best-fit DER technologies.</p>
-      <label>Campaign Objective
-        <select id="campaignObjective">
-          <option value="adoption">Maximize Adoption</option>
-          <option value="affordability">Maximize Affordability Impact</option>
-          <option value="grid">Maximize Grid Flexibility</option>
-          <option value="readiness">Maximize Customer Readiness</option>
-        </select>
-      </label>
-      <button id="exportCampaignPlanBtn" type="button">Export Campaign Plan</button>
-      <div class="cards" id="campaignKpiCards"></div>
-      <div class="cards" id="campaignCards"></div>
+      <section class="panel"><h2>Household Explanation</h2><div id="detail">Select a household to see an executive explanation.</div></section>
     </section>
 
+    <section id="executionTab" class="tab-panel">
+      <section class="panel">
+        <h2>County DER Initiatives Map</h2>
+        <p>Click a county marker to view county-level DER initiative guidance.</p>
+        <svg id="countyMap" viewBox="0 0 900 340" class="county-map"></svg>
+        <div id="countyDetail" class="county-detail">Select a county to view DER initiative specifics.</div>
+      </section>
+
+      <section class="panel campaign-shell">
+        <h2>Campaign Manager</h2>
+        <p class="section-subtitle">Strategy-specific audience scoring, intervention recommendations, and launch planning.</p>
+        <label class="strategy-selector">Campaign Objective
+          <select id="campaignObjective">
+            <option value="adoption">Maximize Adoption</option>
+            <option value="affordability">Maximize Affordability Impact</option>
+            <option value="grid">Maximize Grid Flexibility</option>
+            <option value="readiness">Maximize Customer Readiness</option>
+          </select>
+        </label>
+        <button id="exportCampaignPlanBtn" type="button">Export Campaign Plan</button>
+        <div class="cards" id="campaignKpiCards"></div>
+        <div class="cards" id="campaignCards"></div>
+      </section>
+    </section>
   </main>
 
   <script src="app.js"></script>

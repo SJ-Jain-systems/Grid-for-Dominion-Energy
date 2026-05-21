@@ -2,6 +2,14 @@ let households = [];
 const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 const TABLE_LIMIT = 25;
 
+// Strategy profiles centralize weighting logic so campaign plans can be tuned in one place.
+const STRATEGY_PROFILES = {
+  adoption: { householdTopShare: 0.58, budgetWeight: 1.05, liftWeight: 1.2, barrierWeight: 0.85 },
+  affordability: { householdTopShare: 0.62, budgetWeight: 1.28, liftWeight: 1.0, barrierWeight: 1.22 },
+  grid: { householdTopShare: 0.55, budgetWeight: 1.12, liftWeight: 1.08, barrierWeight: 0.95 },
+  readiness: { householdTopShare: 0.60, budgetWeight: 0.98, liftWeight: 0.94, barrierWeight: 0.72 }
+};
+
 const countyFilter=document.getElementById('countyFilter');
 const incomeFilter=document.getElementById('incomeFilter');
 const derFilter=document.getElementById('derFilter');
@@ -320,8 +328,17 @@ function recommend(h){
   const adoptionPriority=((adoption*affordability*0.9*gridValue*0.5)/incentiveCost)*(1-friction);
   const gridPriority=((gridValue*adoption*1.2)/Math.sqrt(incentiveCost))*(1-friction*0.5);
   const affordabilityPriority=((affordability*adoption*1.1)/incentiveCost)*(1-friction*0.7);
-  const when=h.peak57>9?"2-4 weeks before summer peak season":(h.ev?"Immediately after EV onboarding":"During monthly bill cycle");
   const barriers = scoreBarriers(h);
+  const maxBarrier = Math.max(...Object.values(barriers));
+  const readinessPriority=clamp(
+    (0.33 * h.engagement) +
+    (0.27 * h.financingAcceptance) +
+    (0.2 * (1 - (maxBarrier / 100))) +
+    (0.2 * (h.priorEnrollment ? 1 : clamp(h.priorEligibilityCount / 4, 0, 1))),
+    0,
+    1
+  );
+  const when=h.peak57>9?"2-4 weeks before summer peak season":(h.ev?"Immediately after EV onboarding":"During monthly bill cycle");
   const dominantBarrier = getDominantBarrier(barriers);
   const recommendedOffering = barrierOfferMap[dominantBarrier.barrierKey] || 'Standard energy advisor outreach';
   const recommendedOfferingExplanation = offeringExplanationMap[dominantBarrier.barrierKey] || "This offering is selected to reduce the household's highest adoption barrier.";
@@ -333,6 +350,7 @@ function recommend(h){
     adoptionPriority,
     gridPriority,
     affordabilityPriority,
+    readinessPriority,
     tech,
     msg,
     financing,
@@ -348,15 +366,29 @@ function recommend(h){
   };
 }
 
-function getPriorityKey(){const s=strategyFilter.value;return s==='grid'?'gridPriority':s==='affordability'?'affordabilityPriority':'adoptionPriority';}
+function getPriorityKey(){const s=strategyFilter.value;return s==='grid'?'gridPriority':s==='affordability'?'affordabilityPriority':s==='readiness'?'readinessPriority':'adoptionPriority';}
 function filters(rows){const county=countyFilter.value,income=incomeFilter.value,der=derFilter.value,goal=goalFilter.value,min=+minAdoption.value/100;return rows.filter(r=>(county==='all'||r.county===county)&&(income==='all'||(income==='very-low'&&r.income<40000)||(income==='low'&&r.income>=40000&&r.income<80000)||(income==='mid'&&r.income>=80000&&r.income<=120000)||(income==='upper-mid'&&r.income>120000&&r.income<=180000)||(income==='high'&&r.income>180000))&&(der==='all'||r.tech===der)&&(goal==='all'||(goal==='bill'&&r.msg==='Bill savings')||(goal==='automation'&&r.msg==='Automation & convenience')||(goal==='resilience'&&r.msg==='Resilience & outage protection'))&&r.adoption>=min);}
 
 function buildCampaigns(rows){
   const campaignRows = Array.isArray(rows) ? rows : [];
   const objective = campaignObjective?.value || 'adoption';
+  const profile = STRATEGY_PROFILES[objective] || STRATEGY_PROFILES.adoption;
+
+  // Plan-specific household scoring changes which households enter campaign segmentation.
+  const objectiveHouseholdScore = (r) => ({
+    adoption: (0.45 * r.adoptionPriority) + (0.2 * r.adoption) + (0.2 * r.gridValue / 25) + (0.15 * (1 - r.dominantBarrierScore / 100)),
+    affordability: (0.5 * r.affordabilityPriority) + (0.28 * clamp(r.energyBurden / 12, 0, 1)) + (0.22 * (r.income < 80000 ? 1 : 0.35)),
+    grid: (0.45 * r.gridPriority) + (0.25 * clamp(r.peak57 / 13, 0, 1)) + (0.15 * (r.ev ? 1 : 0)) + (0.15 * r.outageRisk),
+    readiness: (0.5 * r.readinessPriority) + (0.2 * clamp(r.engagement / 100, 0, 1)) + (0.15 * r.financingAcceptance) + (0.15 * (1 - r.dominantBarrierScore / 100))
+  }[objective] || r.adoptionPriority);
+
+  const candidateRows = [...campaignRows]
+    .sort((a,b)=>objectiveHouseholdScore(b)-objectiveHouseholdScore(a))
+    .slice(0, Math.max(20, Math.floor(campaignRows.length * profile.householdTopShare)));
+
   const grouped = {};
 
-  campaignRows.forEach((r) => {
+  candidateRows.forEach((r) => {
     const barrier = r.dominantBarrier?.barrierKey || r.dominantBarrierKey || 'unknownBarrier';
     const tech = r.tech || 'General DER';
     const key = `${barrier}__${tech}`;
@@ -402,11 +434,11 @@ function buildCampaigns(rows){
     }, {});
     const recommendedTiming = Object.entries(timingCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'During monthly bill cycle';
 
-    const estimatedCampaignCost = (1400 + (audienceSize * 120) + (avgBarrierScore * 11) + (avgEnergyBurden * 35));
+    const estimatedCampaignCost = (1400 + (audienceSize * (120 * profile.budgetWeight)) + (avgBarrierScore * (11 * profile.barrierWeight)) + (avgEnergyBurden * 35));
     const expectedAdoptionLift = clamp(
       0.08 +
-      (avgPriorityScore * 0.06) +
-      ((avgBarrierScore / 100) * 0.14) +
+      (avgPriorityScore * (0.06 * profile.liftWeight)) +
+      ((avgBarrierScore / 100) * (0.14 * profile.barrierWeight)) +
       (Math.log10(audienceSize + 1) * 0.05),
       0.03,
       0.45
@@ -704,4 +736,12 @@ async function init(){
 ['countyFilter','incomeFilter','derFilter','minAdoption','goalFilter','strategyFilter'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{minValue.textContent=`${minAdoption.value}%`;render();}));
 campaignObjective?.addEventListener('input', render);
 exportCampaignPlanBtn?.addEventListener('click', ()=>exportCampaignPlanCsv(displayedCampaigns));
+
+document.querySelectorAll('.tab-btn').forEach((btn)=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach((b)=>b.classList.toggle('active', b===btn));
+    document.querySelectorAll('.tab-panel').forEach((panel)=>panel.classList.toggle('active', panel.id===btn.dataset.tab));
+  });
+});
+
 init();
