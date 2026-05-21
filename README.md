@@ -83,12 +83,13 @@ These inputs are used to generate recommendation outputs:
 
 ### KPI cards
 
-- Households analyzed
 - High-priority households
 - Average energy burden
 - Projected peak reduction
 - Estimated annual savings
 - Highest-value segment
+
+Supporting context appears below the KPI row: `Based on X households analyzed`.
 
 ### Main Recommendations table
 

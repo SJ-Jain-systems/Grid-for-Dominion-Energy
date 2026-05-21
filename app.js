@@ -23,6 +23,7 @@ const rowsEl=document.getElementById('rows');
 const detail=document.getElementById('detail');
 const kpiCards=document.getElementById('kpiCards');
 const campaignCards=document.getElementById('campaignCards');
+const kpiContext=document.getElementById('kpiContext');
 const campaignKpiCards=document.getElementById('campaignKpiCards');
 let displayedCampaigns = [];
 
@@ -706,8 +707,11 @@ function render(){
   const rows=filters(scored);
   const topRows=rows.slice(0,TABLE_LIMIT);
   const high=topRows.filter(r=>r[key]>topRows[0]?.[key]*0.7).length;
-  const kpis=[['Households analyzed',rows.length],['High-priority households',high],['Average energy burden',`${(topRows.reduce((s,r)=>s+r.energyBurden,0)/Math.max(topRows.length,1)).toFixed(1)}%`],['Projected peak reduction',`${(topRows.reduce((s,r)=>s+r.peak57*0.09,0)).toFixed(1)} MW`],['Estimated annual savings',`$${Math.round(topRows.reduce((s,r)=>s+r.affordability*12*0.05,0)).toLocaleString()}`],['Highest-value segment',topRows[0]?.tech || 'n/a']];
+  const kpis=[['High-priority households',high],['Average energy burden',`${(topRows.reduce((s,r)=>s+r.energyBurden,0)/Math.max(topRows.length,1)).toFixed(1)}%`],['Projected peak reduction',`${(topRows.reduce((s,r)=>s+r.peak57*0.09,0)).toFixed(1)} MW`],['Estimated annual savings',`$${Math.round(topRows.reduce((s,r)=>s+r.affordability*12*0.05,0)).toLocaleString()}`],['Highest-value segment',topRows[0]?.tech || 'n/a']];
   kpiCards.innerHTML=kpis.map(([k,v])=>`<div class='card'>${k}<b>${v}</b></div>`).join('');
+  if(kpiContext){
+    kpiContext.textContent=`Based on ${rows.length.toLocaleString()} households analyzed`;
+  }
 
   const renderDetail = (r) => `
     <b>${r.id} · ${r.county}</b><br/><br/>
