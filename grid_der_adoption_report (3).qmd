@@ -1,0 +1,1059 @@
+---
+title: "GRID: The Behavioral Engine for DER Adoption"
+subtitle: "A conversion-intelligence layer for Dominion Energy DER targeting"
+author:
+  - "Jalen Mui"
+  - "Shreyans Jain"
+date: "2026-05-20"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    code-summary: "Show code"
+    theme: cosmo
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+```{python}
+#| label: setup
+#| include: false
+
+from pathlib import Path
+import json
+import math
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+pd.set_option("display.max_columns", 80)
+
+# The report is designed to run inside the project folder.
+# If rendered from another environment, the /mnt/data fallback supports this ChatGPT sandbox.
+DATA_PATH = Path("virginia_sample.json")
+if not DATA_PATH.exists():
+    DATA_PATH = Path("/mnt/data/virginia_sample.json")
+
+with open(DATA_PATH, "r", encoding="utf-8") as f:
+    raw_households = json.load(f)
+
+df = pd.DataFrame(raw_households)
+
+def clamp(x, a, b):
+    return min(b, max(a, x))
+```
+
+## Executive Summary
+
+GRID is a browser-based decision support dashboard for targeting distributed energy resource (DER) programs across Virginia households. Its central argument is that DER adoption is not only an awareness problem or a price problem. A customer may know that a rebate, EV charger program, smart thermostat reward, home energy assessment, or time-of-use rate exists and still fail to adopt because the decision feels confusing, financially risky, technically uncertain, or not urgent enough.
+
+The project therefore reframes DER adoption as a conversion problem. GRID predicts:
+
+1. which households are promising DER candidates,
+2. what DER pathway best fits each household,
+3. what behavioral or financial barrier is most likely stopping adoption,
+4. what intervention Dominion Energy could use to reduce that barrier, and
+5. how campaign managers should prioritize households and segments under different objectives.
+
+The current prototype uses a simulated Virginia household dataset and a static JavaScript frontend. It scores households across adoption, affordability, grid-flexibility, and customer-readiness objectives. It also quantifies qualitative barriers such as upfront cost friction, installer trust issues, rebate confusion, low ROI clarity, charging access barriers, home suitability barriers, and rate-plan confusion.
+
+## Thesis: The Bottleneck, Value Proposition, and Why Current Engagements Fail
+
+Most DER outreach assumes that adoption rises when programs become cheaper and customers become more aware of them. GRID challenges that assumption. The bottleneck is not simply information availability; it is diagnostic weakness. Utilities often do not know which customers are most likely to respond to a particular intervention, why those customers have not already enrolled, or which low-cost nudge would convert them.
+
+GRID’s value proposition is to act as a conversion-intelligence layer for DER programs. Instead of only predicting who is likely to adopt, GRID diagnoses the household-level reason adoption stalls and maps that barrier to a targeted intervention.
+
+For example:
+
+- a high-burden household may need an income-qualified upgrade package, not a generic DER awareness message;
+- an EV owner without a reliable charging setup may need an EV charging access intervention;
+- a household with high expected savings but low savings confidence may need a personalized savings estimate;
+- a renter or multifamily household may need a different pathway than a detached homeowner;
+- a household overwhelmed by eligibility rules may need automatic rebate matching or concierge support.
+
+This matters for a utility because DERs can help turn customer-side devices into flexible grid assets. EV chargers, smart thermostats, batteries, rooftop solar, water heaters, and similar technologies can reduce peak demand or shift load away from constrained hours. GRID attempts to identify not just the highest-propensity adopters, but the households whose adoption would be most useful from a grid, affordability, and campaign execution perspective.
+
+## Project Overview
+
+The uploaded project files describe GRID as a static frontend dashboard with four main functions:
+
+- scoring households for DER outreach using multiple objectives;
+- filtering and reviewing top recommendations in an interactive table;
+- displaying KPI summaries for planning;
+- showing a county map with county-level DER initiative guidance.
+
+The prototype currently consists of:
+
+| File | Role in project |
+|---|---|
+| `index.html` | Dashboard structure, tab layout, filter controls, recommendation table, map section, and campaign manager section |
+| `styles.css` | Visual system, cards, tables, tabs, map styling, and campaign manager layout |
+| `app.js` | Data loading, scoring functions, barrier quantification, recommendations, campaign segmentation, map rendering, and CSV export |
+| `virginia_sample.json` | Simulated household-level Virginia dataset used by the dashboard |
+| `README.md` | Project description, scoring summary, data model, features, and roadmap |
+
+```{python}
+#| label: data-preview
+#| tbl-cap: "First five rows of the simulated Virginia household dataset."
+
+df.head()
+```
+
+## Data Model
+
+GRID uses household-level variables that represent energy usage, demographics, technology readiness, housing context, and program-friction proxies. The current dataset contains 5,000 records.
+
+```{python}
+#| label: data-shape
+
+summary_rows = pd.DataFrame({
+    "Metric": [
+        "Households",
+        "Counties",
+        "Columns",
+        "Average income",
+        "Average energy burden",
+        "Average 5-7pm peak proxy",
+        "EV ownership share",
+        "Smart thermostat share"
+    ],
+    "Value": [
+        len(df),
+        df["county"].nunique(),
+        df.shape[1],
+        f"${df['income'].mean():,.0f}",
+        f"{df['energyBurden'].mean():.2f}",
+        f"{df['peak57'].mean():.2f}",
+        f"{df['ev'].mean():.1%}",
+        f"{df['smartThermostat'].mean():.1%}"
+    ]
+})
+
+summary_rows
+```
+
+### Feature Dictionary
+
+The dataset is intentionally built around variables that a utility could plausibly approximate through customer records, program records, billing data, smart meter data, housing data, or third-party enrichment.
+
+```{python}
+#| label: feature-dictionary
+#| tbl-cap: "Key variables used by the GRID scoring model."
+
+feature_dictionary = pd.DataFrame([
+    ("id", "Unique household identifier"),
+    ("county", "Virginia county or city used for geographic segmentation"),
+    ("income", "Household income proxy"),
+    ("energyBurden", "Energy cost pressure proxy"),
+    ("peak57", "5-7pm peak usage proxy"),
+    ("homeAge", "Housing age proxy"),
+    ("ev", "EV ownership flag"),
+    ("smartThermostat", "Existing smart thermostat flag"),
+    ("outageRisk", "Outage exposure or resilience need proxy"),
+    ("engagement", "Prior engagement or responsiveness proxy"),
+    ("homeValue", "Housing asset value proxy"),
+    ("applianceAge", "Age of major appliance or replacement-timing proxy"),
+    ("solarSuitability", "Solar feasibility score"),
+    ("financingAcceptance", "Estimated willingness to accept financing"),
+    ("renterOwner", "Owner/renter status"),
+    ("installerCount25mi", "Number of installers within 25 miles"),
+    ("installerAvgRating", "Average installer rating"),
+    ("installerComplaintCount", "Installer complaint count"),
+    ("eligibleProgramCount", "Number of programs household may be eligible for"),
+    ("requiredStepCount", "Number of steps required to adopt"),
+    ("rebateCount", "Available rebate count"),
+    ("autoMatchedRebateCount", "Rebates automatically matched by system"),
+    ("savingsEstimateConfidence", "Confidence in estimated savings"),
+    ("priorEligibilityCount", "Times household has been eligible before"),
+    ("priorEnrollment", "Whether household previously enrolled"),
+    ("publicChargerDistance", "Distance to public EV charging"),
+    ("multifamily", "Multifamily housing flag"),
+    ("garageOrDriveway", "Home charging access proxy"),
+    ("offPeakEligible", "Eligible for off-peak rate plan"),
+    ("offPeakEnrolled", "Already enrolled in off-peak plan"),
+    ("usageComplexity", "Complexity of electricity usage pattern"),
+    ("panelCapacityProxy", "Electrical panel capacity proxy"),
+    ("roofSuitability", "Roof suitability score"),
+    ("estimatedInstallCost", "Estimated installation cost")
+], columns=["Variable", "Interpretation"])
+
+feature_dictionary
+```
+
+## Exploratory Analysis
+
+Before scoring households, the dataset can be summarized by geography, affordability pressure, and energy usage. This allows the report to connect the model outputs back to the underlying population.
+
+```{python}
+#| label: county-summary
+#| tbl-cap: "County-level descriptive statistics."
+
+county_summary = (
+    df.groupby("county")
+      .agg(
+          households=("id", "count"),
+          avg_income=("income", "mean"),
+          avg_energy_burden=("energyBurden", "mean"),
+          avg_peak57=("peak57", "mean"),
+          ev_share=("ev", "mean"),
+          smart_thermostat_share=("smartThermostat", "mean")
+      )
+      .reset_index()
+      .sort_values("households", ascending=False)
+)
+
+county_summary
+```
+
+```{python}
+#| label: county-count-plot
+#| fig-cap: "Household count by county in the simulated dataset."
+
+county_counts = df["county"].value_counts().sort_values()
+ax = county_counts.plot(kind="barh", figsize=(8, 5))
+ax.set_xlabel("Households")
+ax.set_ylabel("County")
+ax.set_title("Simulated Household Records by County")
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+#| label: energy-burden-plot
+#| fig-cap: "Energy burden distribution in the simulated household dataset."
+
+ax = df["energyBurden"].plot(kind="hist", bins=30, figsize=(8, 5))
+ax.set_xlabel("Energy burden")
+ax.set_ylabel("Households")
+ax.set_title("Distribution of Energy Burden")
+plt.tight_layout()
+plt.show()
+```
+
+## Methodology
+
+GRID converts raw household records into four types of outputs:
+
+1. **intermediate metrics**, such as adoption propensity, grid value, and affordability impact;
+2. **recommended DER pathway**, such as Smart Thermostat, Managed EV Charging, Battery + Smart Panel, Weatherization Bundle, or Smart Water Heater;
+3. **barrier scores**, which quantify qualitative adoption barriers on a 0-100 scale;
+4. **campaign plans**, which group households by dominant barrier and recommended DER technology.
+
+The most important design choice is that GRID treats adoption as a multi-objective targeting problem. A household can be high-value under one objective and less important under another. For example, a household might have high grid flexibility value because of EV load and peak demand, while another might have higher affordability value because of income and energy burden.
+
+## Scoring Model
+
+### Core Intermediate Metrics
+
+The JavaScript prototype computes three core metrics.
+
+**Adoption propensity**
+
+The adoption score is a weighted average of income normalization, peak load, engagement, EV ownership, smart thermostat status, financing acceptance, and solar suitability:
+
+$$
+Adoption =
+0.20 \cdot IncomeNorm +
+0.20 \cdot PeakNorm +
+0.15 \cdot Engagement +
+0.10 \cdot EVSignal +
+0.10 \cdot ThermostatSignal +
+0.10 \cdot FinancingAcceptance +
+0.15 \cdot SolarSuitability
+$$
+
+where each normalized component is clamped to keep the score between 0 and 1.
+
+**Grid value**
+
+The grid value score emphasizes peak usage, outage exposure, EV load shifting potential, and appliance age:
+
+$$
+GridValue =
+Peak57 \cdot (1 + 0.35 \cdot OutageRisk) \cdot EVMultiplier \cdot (1 + ApplianceAge / 25)
+$$
+
+**Affordability impact**
+
+The affordability score increases when peak usage is high, energy burden is high, and income is lower:
+
+$$
+Affordability =
+(Peak57 \cdot 4.5) \cdot (1 + EnergyBurden/10)
+\cdot \left(1 + \frac{90000 - \min(Income, 90000)}{90000}\right)
+$$
+
+### Recommended DER Pathway
+
+The project uses rule-based assignment for the DER pathway:
+
+| Condition | DER Pathway | Message | Financing | Incentive |
+|---|---|---|---|---|
+| EV owner and peak57 > 8.5 | Managed EV Charging | Automation & convenience | Bill financing | EV charging credit |
+| Outage risk > 0.45 | Battery + Smart Panel | Resilience & outage protection | Bill financing | Battery financing support |
+| Energy burden > 7 | Weatherization Bundle | Bill savings | No-upfront-cost installation | Weatherization rebate |
+| Peak57 > 9.5 | Smart Water Heater | Automation & convenience | Instant rebate | Peak-time bill credit |
+| Otherwise | Smart Thermostat | Bill savings | Instant rebate | Thermostat rebate |
+
+### Priority Scores
+
+The final household priority depends on the selected objective:
+
+$$
+AdoptionPriority =
+\frac{Adoption \cdot Affordability \cdot 0.9 \cdot GridValue \cdot 0.5}{IncentiveCost}
+\cdot (1 - Friction)
+$$
+
+$$
+GridPriority =
+\frac{GridValue \cdot Adoption \cdot 1.2}{\sqrt{IncentiveCost}}
+\cdot (1 - 0.5 \cdot Friction)
+$$
+
+$$
+AffordabilityPriority =
+\frac{Affordability \cdot Adoption \cdot 1.1}{IncentiveCost}
+\cdot (1 - 0.7 \cdot Friction)
+$$
+
+$$
+ReadinessPriority =
+0.33 \cdot Engagement +
+0.27 \cdot FinancingAcceptance +
+0.20 \cdot (1 - MaxBarrier/100) +
+0.20 \cdot PriorEnrollmentSignal
+$$
+
+The readiness score is the most behavioral of the four. It rewards engagement, financing acceptance, lower barriers, and evidence that the household has previously interacted with eligibility or enrollment.
+
+## Quantifying Qualitative Barriers
+
+A major contribution of GRID is the conversion of qualitative adoption frictions into numeric barrier scores. Each barrier is scored from 0 to 100. A higher score means the barrier is more severe for that household.
+
+The dominant barrier is the highest-scoring barrier for the household.
+
+```{python}
+#| label: scoring-functions
+
+barrier_label_map = {
+    "upfrontCostFriction": "Upfront Cost Friction",
+    "installerTrustIssues": "Installer Trust Issues",
+    "decisionFatigue": "Decision Fatigue",
+    "rebateConfusion": "Rebate Confusion",
+    "lowROIClarity": "Low ROI Clarity",
+    "lowUrgency": "Low Urgency",
+    "highEnergyBurden": "High Energy Burden",
+    "chargingAccessBarrier": "Charging Access Barrier",
+    "homeSuitabilityBarrier": "Home Suitability Barrier",
+    "ratePlanConfusion": "Rate Plan Confusion"
+}
+
+barrier_offer_map = {
+    "upfrontCostFriction": "0% on-bill financing",
+    "installerTrustIssues": "Dominion-vetted installer marketplace",
+    "decisionFatigue": "Switching concierge",
+    "rebateConfusion": "Automatic rebate matching",
+    "lowROIClarity": "Personalized savings estimate",
+    "lowUrgency": "Limited-time bill credit",
+    "highEnergyBurden": "Income-qualified upgrade package",
+    "chargingAccessBarrier": "EV charging access program",
+    "homeSuitabilityBarrier": "Smart panel/assessment package",
+    "ratePlanConfusion": "Off-peak enrollment recommendation"
+}
+
+def score_barriers(h):
+    owner = h["renterOwner"] == "owner"
+    renter_penalty = 0 if owner else 1
+    multifamily_penalty = 1 if h["multifamily"] else 0
+    no_driveway_penalty = 0 if h["garageOrDriveway"] else 1
+
+    installer_quality_gap = clamp(5 - h["installerAvgRating"], 0, 2)
+    complaint_intensity = clamp(h["installerComplaintCount"] / max(h["installerCount25mi"], 1), 0, 3)
+    program_complexity = clamp((h["requiredStepCount"] - 2) / 8, 0, 1)
+    rebate_automation_gap = clamp(
+        (h["rebateCount"] - h["autoMatchedRebateCount"]) / max(h["rebateCount"], 1),
+        0,
+        1
+    )
+
+    financing_gap = clamp(1 - h["financingAcceptance"], 0, 1)
+    income_pressure = clamp((90000 - h["income"]) / 90000, 0, 1)
+    install_cost_pressure = clamp((h["estimatedInstallCost"] - 12000) / 20000, 0, 1)
+    low_home_value_buffer = clamp((350000 - h["homeValue"]) / 350000, 0, 1)
+
+    roi_uncertainty = clamp(1 - h["savingsEstimateConfidence"], 0, 1)
+    suitability_gap = clamp(1 - ((h["roofSuitability"] + h["solarSuitability"]) / 2), 0, 1)
+    panel_constraint = clamp((150 - h["panelCapacityProxy"]) / 90, 0, 1)
+
+    burden_low = clamp((6 - h["energyBurden"]) / 6, 0, 1)
+    burden_high = clamp((h["energyBurden"] - 4) / 6, 0, 1)
+    efficient_home_signal = clamp((10 - h["applianceAge"]) / 10, 0, 1)
+
+    off_peak_available = 1 if h["offPeakEligible"] else 0
+    off_peak_not_enrolled = 1 if (h["offPeakEligible"] and not h["offPeakEnrolled"]) else 0
+    complexity = clamp((h["usageComplexity"] - 1) / 4, 0, 1)
+
+    return {
+        "upfrontCostFriction": clamp(100 * (
+            0.34 * financing_gap +
+            0.24 * income_pressure +
+            0.22 * install_cost_pressure +
+            0.12 * low_home_value_buffer +
+            0.08 * renter_penalty
+        ), 0, 100),
+
+        "installerTrustIssues": clamp(100 * (
+            0.40 * (installer_quality_gap / 2) +
+            0.35 * (complaint_intensity / 3) +
+            0.15 * clamp((40 - h["installerCount25mi"]) / 40, 0, 1) +
+            0.10 * (0 if h["priorEnrollment"] else clamp(h["priorEligibilityCount"] / 4, 0, 1))
+        ), 0, 100),
+
+        "decisionFatigue": clamp(100 * (
+            0.42 * program_complexity +
+            0.24 * complexity +
+            0.18 * clamp(h["eligibleProgramCount"] / 7, 0, 1) +
+            0.16 * clamp(h["priorEligibilityCount"] / 5, 0, 1)
+        ), 0, 100),
+
+        "rebateConfusion": clamp(100 * (
+            0.45 * rebate_automation_gap +
+            0.30 * clamp(h["rebateCount"] / 5, 0, 1) +
+            0.15 * program_complexity +
+            0.10 * (0 if h["priorEnrollment"] else 1)
+        ), 0, 100),
+
+        "lowROIClarity": clamp(100 * (
+            0.50 * roi_uncertainty +
+            0.22 * suitability_gap +
+            0.16 * panel_constraint +
+            0.12 * clamp((h["homeAge"] - 25) / 35, 0, 1)
+        ), 0, 100),
+
+        "lowUrgency": clamp(100 * (
+            0.55 * burden_low +
+            0.20 * efficient_home_signal +
+            0.15 * (0 if h["ev"] else 1) +
+            0.10 * (0.5 if off_peak_available else 0)
+        ), 0, 100),
+
+        "highEnergyBurden": clamp(100 * (
+            0.75 * burden_high +
+            0.15 * income_pressure +
+            0.10 * clamp((h["peak57"] - 7) / 6, 0, 1)
+        ), 0, 100),
+
+        "chargingAccessBarrier": clamp(100 * (
+            0.30 * no_driveway_penalty +
+            0.23 * renter_penalty +
+            0.20 * multifamily_penalty +
+            0.17 * clamp(h["publicChargerDistance"] / 6, 0, 1) +
+            0.10 * (0 if h["ev"] else 0.5)
+        ), 0, 100),
+
+        "homeSuitabilityBarrier": clamp(100 * (
+            0.36 * suitability_gap +
+            0.22 * panel_constraint +
+            0.18 * multifamily_penalty +
+            0.14 * renter_penalty +
+            0.10 * clamp((h["homeAge"] - 30) / 30, 0, 1)
+        ), 0, 100),
+
+        "ratePlanConfusion": clamp(100 * (
+            0.32 * off_peak_not_enrolled +
+            0.25 * complexity +
+            0.18 * program_complexity +
+            0.15 * clamp(h["eligibleProgramCount"] / 7, 0, 1) +
+            0.10 * (0 if h["priorEnrollment"] else 1)
+        ), 0, 100)
+    }
+
+def recommend(h):
+    adoption = clamp(
+        0.2 * clamp((h["income"] - 30000) / 170000, 0, 1) +
+        0.2 * clamp(h["peak57"] / 12, 0, 1) +
+        0.15 * h["engagement"] +
+        0.1 * (0.95 if h["ev"] else 0.6) +
+        0.1 * (1 - h["smartThermostat"] * 0.2) +
+        0.1 * h["financingAcceptance"] +
+        0.15 * h["solarSuitability"],
+        0,
+        1
+    )
+
+    grid_value = (
+        h["peak57"] *
+        (1 + h["outageRisk"] * 0.35) *
+        (1.2 if h["ev"] else 1) *
+        (1 + h["applianceAge"] / 25)
+    )
+
+    affordability = (
+        (h["peak57"] * 4.5) *
+        (1 + h["energyBurden"] / 10) *
+        (1 + ((90000 - min(h["income"], 90000)) / 90000))
+    )
+
+    tech = "Smart Thermostat"
+    msg = "Bill savings"
+    financing = "Instant rebate"
+    incentive = "Thermostat rebate"
+    why = "High cooling load and easy install path"
+    friction = 0.25
+
+    if h["ev"] and h["peak57"] > 8.5:
+        tech = "Managed EV Charging"
+        msg = "Automation & convenience"
+        financing = "Bill financing"
+        incentive = "EV charging credit"
+        why = "Evening EV load can be shifted automatically"
+        friction = 0.4
+    elif h["outageRisk"] > 0.45:
+        tech = "Battery + Smart Panel"
+        msg = "Resilience & outage protection"
+        financing = "Bill financing"
+        incentive = "Battery financing support"
+        why = "Higher outage exposure with resilience value"
+        friction = 0.6
+    elif h["energyBurden"] > 7:
+        tech = "Weatherization Bundle"
+        msg = "Bill savings"
+        financing = "No-upfront-cost installation"
+        incentive = "Weatherization rebate"
+        why = "High energy burden household with strong savings upside"
+        friction = 0.45
+    elif h["peak57"] > 9.5:
+        tech = "Smart Water Heater"
+        msg = "Automation & convenience"
+        financing = "Instant rebate"
+        incentive = "Peak-time bill credit"
+        why = "Water-heating flexibility supports 5-7pm load shift"
+        friction = 0.35
+
+    incentive_cost = {
+        "Thermostat rebate": 50,
+        "Peak-time bill credit": 125,
+        "EV charging credit": 125,
+        "Weatherization rebate": 300,
+        "Battery financing support": 500
+    }[incentive]
+
+    adoption_priority = ((adoption * affordability * 0.9 * grid_value * 0.5) / incentive_cost) * (1 - friction)
+    grid_priority = ((grid_value * adoption * 1.2) / math.sqrt(incentive_cost)) * (1 - friction * 0.5)
+    affordability_priority = ((affordability * adoption * 1.1) / incentive_cost) * (1 - friction * 0.7)
+
+    barriers = score_barriers(h)
+    dominant_key = max(barriers, key=barriers.get)
+    dominant_score = barriers[dominant_key]
+
+    readiness_priority = clamp(
+        (0.33 * h["engagement"]) +
+        (0.27 * h["financingAcceptance"]) +
+        (0.2 * (1 - dominant_score / 100)) +
+        (0.2 * (1 if h["priorEnrollment"] else clamp(h["priorEligibilityCount"] / 4, 0, 1))),
+        0,
+        1
+    )
+
+    when = (
+        "2-4 weeks before summer peak season"
+        if h["peak57"] > 9
+        else ("Immediately after EV onboarding" if h["ev"] else "During monthly bill cycle")
+    )
+
+    out = dict(h)
+    out.update({
+        "adoption": adoption,
+        "gridValue": grid_value,
+        "affordability": affordability,
+        "adoptionPriority": adoption_priority,
+        "gridPriority": grid_priority,
+        "affordabilityPriority": affordability_priority,
+        "readinessPriority": readiness_priority,
+        "tech": tech,
+        "msg": msg,
+        "financing": financing,
+        "incentive": incentive,
+        "when": when,
+        "why": why,
+        "dominantBarrierKey": dominant_key,
+        "dominantBarrierLabel": barrier_label_map[dominant_key],
+        "dominantBarrierScore": dominant_score,
+        "recommendedOffering": barrier_offer_map[dominant_key]
+    })
+
+    return out
+
+scored = pd.DataFrame([recommend(row) for row in df.to_dict(orient="records")])
+```
+
+### Barrier-to-Intervention Mapping
+
+```{python}
+#| label: barrier-offers
+#| tbl-cap: "How GRID maps the highest-scoring barrier to a Dominion intervention."
+
+pd.DataFrame([
+    {
+        "Barrier": barrier_label_map[k],
+        "Dominion intervention": v
+    }
+    for k, v in barrier_offer_map.items()
+])
+```
+
+## Model Outputs
+
+### Dominant Barriers
+
+```{python}
+#| label: dominant-barrier-table
+#| tbl-cap: "Dominant barrier distribution."
+
+dominant_barrier_summary = (
+    scored["dominantBarrierLabel"]
+    .value_counts()
+    .rename_axis("Dominant barrier")
+    .reset_index(name="Households")
+)
+
+dominant_barrier_summary
+```
+
+```{python}
+#| label: dominant-barrier-plot
+#| fig-cap: "Most common dominant adoption barriers."
+
+barrier_counts = scored["dominantBarrierLabel"].value_counts().sort_values()
+ax = barrier_counts.plot(kind="barh", figsize=(9, 5))
+ax.set_xlabel("Households")
+ax.set_ylabel("Dominant barrier")
+ax.set_title("Dominant Barrier Distribution")
+plt.tight_layout()
+plt.show()
+```
+
+### Recommended DER Pathways
+
+```{python}
+#| label: tech-mix
+#| tbl-cap: "Recommended DER pathway distribution."
+
+tech_summary = (
+    scored["tech"]
+    .value_counts()
+    .rename_axis("Recommended DER pathway")
+    .reset_index(name="Households")
+)
+
+tech_summary
+```
+
+```{python}
+#| label: tech-mix-plot
+#| fig-cap: "Recommended DER pathway mix."
+
+tech_counts = scored["tech"].value_counts().sort_values()
+ax = tech_counts.plot(kind="barh", figsize=(8, 5))
+ax.set_xlabel("Households")
+ax.set_ylabel("Recommended DER pathway")
+ax.set_title("DER Recommendation Mix")
+plt.tight_layout()
+plt.show()
+```
+
+### Top Household Recommendations
+
+The dashboard displays the top target homes for the selected strategy. In the frontend, this appears as an interactive recommendations table. In the report, the same logic can be reproduced by sorting on the selected priority score.
+
+```{python}
+#| label: top-adoption
+#| tbl-cap: "Top 15 households under the Maximize Adoption objective."
+
+top_adoption = (
+    scored.sort_values("adoptionPriority", ascending=False)
+    .loc[:, [
+        "id", "county", "adoptionPriority", "tech", "msg", "financing",
+        "incentive", "when", "dominantBarrierLabel",
+        "dominantBarrierScore", "recommendedOffering"
+    ]]
+    .head(15)
+)
+
+top_adoption
+```
+
+```{python}
+#| label: objective-comparison
+#| tbl-cap: "Top household under each campaign objective."
+
+objective_cols = {
+    "Maximize Adoption": "adoptionPriority",
+    "Maximize Affordability": "affordabilityPriority",
+    "Maximize Grid Flexibility": "gridPriority",
+    "Maximize Customer Readiness": "readinessPriority"
+}
+
+top_by_objective = []
+for objective, col in objective_cols.items():
+    row = scored.sort_values(col, ascending=False).iloc[0]
+    top_by_objective.append({
+        "Objective": objective,
+        "Household": row["id"],
+        "County": row["county"],
+        "Score": row[col],
+        "Recommended DER": row["tech"],
+        "Top barrier": row["dominantBarrierLabel"],
+        "Dominion offer": row["recommendedOffering"]
+    })
+
+pd.DataFrame(top_by_objective)
+```
+
+## Use Case: Identification → Barriers → Conversion
+
+GRID’s workflow is:
+
+1. **Identification**: Use household data to identify customers with strong DER potential under the selected objective.
+2. **Barrier diagnosis**: Quantify the dominant adoption barrier for each household.
+3. **Conversion recommendation**: Match the household to a DER pathway and friction-reducing offer.
+4. **Campaign planning**: Group households into campaign segments by dominant barrier and technology pathway.
+5. **Execution support**: Export campaign plans and use county rollups to guide local initiative design.
+
+This produces a more useful decision process than a simple “high propensity” score. A basic propensity model may say who is likely to adopt. GRID also attempts to say what they should be offered and why.
+
+## Campaign Manager
+
+The Campaign Manager builds strategy-specific segments. Campaign plans are grouped by dominant barrier and DER pathway. They then receive objective-specific scores. This means the top campaign can change depending on whether the user selects adoption, affordability, grid flexibility, or readiness.
+
+The dashboard’s strategy profiles are:
+
+| Objective | Household top share | Budget weight | Lift weight | Barrier weight |
+|---|---:|---:|---:|---:|
+| Adoption | 0.58 | 1.05 | 1.20 | 0.85 |
+| Affordability | 0.62 | 1.28 | 1.00 | 1.22 |
+| Grid | 0.55 | 1.12 | 1.08 | 0.95 |
+| Readiness | 0.60 | 0.98 | 0.94 | 0.72 |
+
+```{python}
+#| label: campaign-manager-functions
+
+strategy_profiles = {
+    "adoption": {"householdTopShare": 0.58, "budgetWeight": 1.05, "liftWeight": 1.20, "barrierWeight": 0.85},
+    "affordability": {"householdTopShare": 0.62, "budgetWeight": 1.28, "liftWeight": 1.00, "barrierWeight": 1.22},
+    "grid": {"householdTopShare": 0.55, "budgetWeight": 1.12, "liftWeight": 1.08, "barrierWeight": 0.95},
+    "readiness": {"householdTopShare": 0.60, "budgetWeight": 0.98, "liftWeight": 0.94, "barrierWeight": 0.72}
+}
+
+def objective_household_score(r, objective):
+    if objective == "adoption":
+        return (
+            0.45 * r["adoptionPriority"] +
+            0.20 * r["adoption"] +
+            0.20 * r["gridValue"] / 25 +
+            0.15 * (1 - r["dominantBarrierScore"] / 100)
+        )
+    if objective == "affordability":
+        return (
+            0.50 * r["affordabilityPriority"] +
+            0.28 * clamp(r["energyBurden"] / 12, 0, 1) +
+            0.22 * (1 if r["income"] < 80000 else 0.35)
+        )
+    if objective == "grid":
+        return (
+            0.45 * r["gridPriority"] +
+            0.25 * clamp(r["peak57"] / 13, 0, 1) +
+            0.15 * (1 if r["ev"] else 0) +
+            0.15 * r["outageRisk"]
+        )
+    if objective == "readiness":
+        return (
+            0.50 * r["readinessPriority"] +
+            0.20 * clamp(r["engagement"] / 100, 0, 1) +
+            0.15 * r["financingAcceptance"] +
+            0.15 * (1 - r["dominantBarrierScore"] / 100)
+        )
+    return r["adoptionPriority"]
+
+def build_campaigns(scored_df, objective):
+    profile = strategy_profiles[objective]
+    working = scored_df.copy()
+    working["objectiveHouseholdScore"] = working.apply(
+        lambda r: objective_household_score(r, objective),
+        axis=1
+    )
+
+    candidate_n = max(20, int(len(working) * profile["householdTopShare"]))
+    candidates = working.sort_values("objectiveHouseholdScore", ascending=False).head(candidate_n)
+
+    groups = []
+    for (barrier, tech), group in candidates.groupby(["dominantBarrierLabel", "tech"]):
+        audience_size = len(group)
+        avg_priority_score = group["adoptionPriority"].mean()
+        avg_affordability_priority = group["affordabilityPriority"].mean()
+        avg_grid_priority = group["gridPriority"].mean()
+        avg_barrier_score = group["dominantBarrierScore"].mean()
+        avg_energy_burden = group["energyBurden"].mean()
+        avg_peak57 = group["peak57"].mean()
+        avg_engagement = group["engagement"].mean()
+        avg_financing_acceptance = group["financingAcceptance"].mean()
+        avg_barrier_severity = avg_barrier_score / 100
+        ev_load_share = group["ev"].mean()
+        smart_water_share = (group["tech"] == "Smart Water Heater").mean()
+        battery_or_panel_share = (group["tech"] == "Battery + Smart Panel").mean()
+        income_qualified_share = (group["income"] < 80000).mean()
+
+        dominant_county = group["county"].value_counts().idxmax()
+        recommended_message = group["msg"].value_counts().idxmax()
+        recommended_timing = group["when"].value_counts().idxmax()
+        recommended_offering = group["recommendedOffering"].value_counts().idxmax()
+
+        estimated_campaign_cost = (
+            1400 +
+            audience_size * (120 * profile["budgetWeight"]) +
+            avg_barrier_score * (11 * profile["barrierWeight"]) +
+            avg_energy_burden * 35
+        )
+
+        expected_adoption_lift = clamp(
+            0.08 +
+            avg_priority_score * (0.06 * profile["liftWeight"]) +
+            (avg_barrier_score / 100) * (0.14 * profile["barrierWeight"]) +
+            math.log10(audience_size + 1) * 0.05,
+            0.03,
+            0.45
+        )
+
+        campaign_score_by_objective = {
+            "adoption":
+                avg_priority_score * 45 +
+                expected_adoption_lift * 140 +
+                math.log10(audience_size + 1) * 18 +
+                (avg_barrier_score / 100) * 10 -
+                estimated_campaign_cost / 1300,
+
+            "affordability":
+                avg_affordability_priority * 50 +
+                clamp(avg_energy_burden / 12, 0, 1) * 34 +
+                income_qualified_share * 26 +
+                expected_adoption_lift * 35 -
+                estimated_campaign_cost / 1700,
+
+            "grid":
+                avg_grid_priority * 50 +
+                clamp(avg_peak57 / 20, 0, 1) * 28 +
+                ev_load_share * 18 +
+                smart_water_share * 12 +
+                battery_or_panel_share * 14 -
+                estimated_campaign_cost / 1750,
+
+            "readiness":
+                clamp(avg_engagement / 100, 0, 1) * 42 +
+                avg_financing_acceptance * 35 +
+                (1 - avg_barrier_severity) * 28 +
+                expected_adoption_lift * 20 +
+                math.log10(audience_size + 1) * 10 -
+                estimated_campaign_cost / 1900
+        }
+
+        groups.append({
+            "objective": objective,
+            "campaignName": f"{barrier} · {tech}",
+            "audienceSize": audience_size,
+            "dominantBarrier": barrier,
+            "tech": tech,
+            "recommendedOffering": recommended_offering,
+            "avgPriorityScore": avg_priority_score,
+            "avgBarrierScore": avg_barrier_score,
+            "avgEnergyBurden": avg_energy_burden,
+            "dominantCounty": dominant_county,
+            "estimatedCampaignCost": estimated_campaign_cost,
+            "expectedAdoptionLift": expected_adoption_lift,
+            "campaignScore": campaign_score_by_objective[objective],
+            "recommendedMessage": recommended_message,
+            "recommendedTiming": recommended_timing
+        })
+
+    return pd.DataFrame(groups).sort_values("campaignScore", ascending=False)
+
+campaign_results = pd.concat(
+    [build_campaigns(scored, objective) for objective in strategy_profiles],
+    ignore_index=True
+)
+```
+
+```{python}
+#| label: top-campaigns
+#| tbl-cap: "Top 5 campaign plans under each objective."
+
+top_campaigns = (
+    campaign_results
+    .sort_values(["objective", "campaignScore"], ascending=[True, False])
+    .groupby("objective")
+    .head(5)
+    .loc[:, [
+        "objective", "campaignName", "audienceSize", "dominantCounty",
+        "estimatedCampaignCost", "expectedAdoptionLift",
+        "recommendedOffering", "recommendedMessage", "recommendedTiming"
+    ]]
+)
+
+top_campaigns
+```
+
+```{python}
+#| label: campaign-cost-lift
+#| fig-cap: "Estimated campaign cost versus expected adoption lift."
+
+plot_df = campaign_results.copy()
+fig, ax = plt.subplots(figsize=(8, 5))
+for objective, group in plot_df.groupby("objective"):
+    ax.scatter(group["estimatedCampaignCost"], group["expectedAdoptionLift"], label=objective, alpha=0.7)
+
+ax.set_xlabel("Estimated campaign cost")
+ax.set_ylabel("Expected adoption lift")
+ax.set_title("Campaign Cost vs. Expected Adoption Lift")
+ax.legend(title="Objective")
+plt.tight_layout()
+plt.show()
+```
+
+## Frontend Solution Overview
+
+The current GRID frontend is organized into two primary sections:
+
+1. **Targeting Explorer**  
+   This section explains why GRID focuses on decision friction instead of awareness alone. It includes KPI cards, filters, a top-households recommendation table, and a household explanation panel.
+
+2. **Map + Campaign Manager**  
+   This section includes a clickable county map and the campaign manager. The campaign manager lets the user choose a campaign objective, review KPI cards, see ranked campaign plans, and export a campaign plan CSV.
+
+The interface uses a clean blue-and-white visual system, rounded cards, tab navigation, and responsive grid layouts. The visual hierarchy is strongest where the campaign manager uses card-based summaries instead of only dense tables.
+
+## Traction
+
+The strongest traction signal is the working prototype. The project has moved from concept to an interactive tool with:
+
+- a synthetic Virginia dataset with 5,000 household records;
+- a household-level scoring model;
+- a barrier scoring system;
+- a DER recommendation engine;
+- a county-level map;
+- a campaign manager;
+- objective-specific campaign ranking;
+- CSV export for campaign plans.
+
+This is important because the project no longer exists only as a strategy memo. It is now a testable decision-support workflow.
+
+## Limitations
+
+The current version is best understood as a proof of concept. Its main limitations are:
+
+1. **Synthetic data**  
+   The dataset is simulated. It is useful for demonstrating structure and logic, but it cannot validate real-world customer behavior.
+
+2. **Heuristic scoring**  
+   The model uses hand-built formulas and weights. These are interpretable, but they are not yet trained or calibrated on observed adoption outcomes.
+
+3. **No causal validation**  
+   The model recommends interventions, but it does not yet prove that those interventions cause adoption lift.
+
+4. **Static frontend**  
+   The app runs as a static browser dashboard. A production version would need backend infrastructure, access control, data refresh, audit logging, and secure customer-data handling.
+
+5. **No live program integration**  
+   The current prototype does not connect to Dominion program enrollment systems, CRM tools, billing systems, or field-operations workflows.
+
+6. **Geography is simplified**  
+   The county map is useful for demonstration, but more accurate geographic boundaries and service-territory overlays would improve credibility.
+
+## Forward Guidance
+
+The next version should move from heuristic proof-of-concept to validated decision system.
+
+Recommended next steps:
+
+1. **Replace synthetic data with real or semi-real utility data**
+   - billing profiles,
+   - AMI or smart meter summaries,
+   - program eligibility records,
+   - prior enrollment,
+   - rebate history,
+   - housing and parcel data,
+   - outage exposure,
+   - installer availability.
+
+2. **Create outcome labels**
+   - adopted DER,
+   - clicked outreach,
+   - started enrollment,
+   - completed enrollment,
+   - declined program,
+   - churned or abandoned application.
+
+3. **Validate model performance**
+   - compare predicted priority against observed adoption;
+   - measure ranking lift;
+   - test each objective separately;
+   - evaluate fairness across income, renter status, and geography.
+
+4. **Run campaign experiments**
+   - A/B test automatic rebate matching versus generic rebate messaging;
+   - compare personalized savings estimates against standard savings claims;
+   - test concierge support for high decision-fatigue households;
+   - measure conversion lift by barrier segment.
+
+5. **Improve campaign cost modeling**
+   - replace current average cost assumptions with plan-specific costs;
+   - include channel costs;
+   - include incentive costs;
+   - include operational capacity limits.
+
+6. **Improve the frontend**
+   - separate map and campaign manager into clearer tabs;
+   - reduce table density with expandable rows;
+   - add tooltips explaining scores;
+   - include a model transparency panel;
+   - add county-level heatmaps.
+
+## Roadmap
+
+| Phase | Goal | Deliverable |
+|---|---|---|
+| Phase 1 | Proof of concept | Static dashboard with simulated data and transparent scoring |
+| Phase 2 | Data refinement | Replace assumptions with real program, billing, and eligibility data |
+| Phase 3 | Model validation | Compare scores against observed adoption outcomes |
+| Phase 4 | Experimentation | Run campaign tests by barrier segment and intervention |
+| Phase 5 | Operational integration | Connect recommendations to CRM, outreach, and program enrollment systems |
+| Phase 6 | Production governance | Add privacy controls, model monitoring, fairness checks, and audit logs |
+
+## Conclusion
+
+GRID’s core insight is that DER adoption is not solved by awareness alone. Customers often stall because the conversion pathway is unclear, risky, expensive, poorly timed, or mismatched to their household constraints. By scoring households, identifying dominant barriers, and mapping those barriers to targeted interventions, GRID gives Dominion Energy a more precise way to turn DER programs into grid-beneficial adoption.
+
+The current model is intentionally transparent. Its formulas can be inspected, challenged, revised, and eventually replaced with empirically trained models. That makes the prototype useful both as a dashboard and as a modeling scaffold. The strongest next step is to validate these scores against real adoption behavior and then test whether barrier-specific interventions produce measurable adoption lift.
+
+## Appendix: Reproducibility Notes
+
+To render this report locally:
+
+1. Place `grid_der_adoption_report.qmd` in the same folder as `virginia_sample.json`.
+2. Install Quarto and Python.
+3. Install required Python packages if needed:
+
+```bash
+pip install pandas numpy matplotlib
+```
+
+4. Render the file:
+
+```bash
+quarto render grid_der_adoption_report.qmd
+```
+
+The report uses only local data and does not require an internet connection.
