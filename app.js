@@ -12,6 +12,55 @@ const DOMINION_SAVINGS_ASSUMPTIONS = {
   subsidyPerAdopter: 120
 };
 
+
+const INFRASTRUCTURE_CURVE_ASSUMPTIONS = {
+  stepThresholdsKW: [120, 260, 420],
+  stepCostByTier: [140000, 170000, 210000],
+  stressAnchorKW: 450,
+  stressBaseCostPerKW: 1080,
+  stressSteepness: 2.4
+};
+
+function getInfrastructureCostByModel(demandGrowthKW, model, assumptions){
+  const modeledKW = Math.max(0, demandGrowthKW || 0);
+  if(model === 'linear') return modeledKW * assumptions.costPerKWOfPeakCapacity;
+  if(model === 'stress'){
+    const normalized = modeledKW / INFRASTRUCTURE_CURVE_ASSUMPTIONS.stressAnchorKW;
+    return modeledKW * INFRASTRUCTURE_CURVE_ASSUMPTIONS.stressBaseCostPerKW * (1 + Math.pow(normalized, INFRASTRUCTURE_CURVE_ASSUMPTIONS.stressSteepness));
+  }
+  const thresholds = INFRASTRUCTURE_CURVE_ASSUMPTIONS.stepThresholdsKW;
+  const tierCosts = INFRASTRUCTURE_CURVE_ASSUMPTIONS.stepCostByTier;
+  let total = 0;
+  for(let i=0;i<thresholds.length;i++){
+    if(modeledKW > thresholds[i]) total += tierCosts[i];
+  }
+  const lastThreshold = thresholds[thresholds.length - 1];
+  if(modeledKW > lastThreshold){
+    total += (modeledKW - lastThreshold) * 220;
+  }
+  return total;
+}
+
+function renderInfrastructureCurve(selectedModel){
+  if(!infrastructureCurveChart || !infrastructureCurveLegend) return;
+  const samples = [0, 60, 120, 180, 240, 300, 360, 420, 480, 540];
+  const defs = [
+    { key:'linear', label:'Linear', color:'#2f74de' },
+    { key:'stepwise', label:'Stepwise', color:'#1d9a6c' },
+    { key:'stress', label:'Stress curve', color:'#cc2f42' }
+  ];
+  const series = defs.map((d)=>({ ...d, points: samples.map((kw)=> getInfrastructureCostByModel(kw, d.key, DOMINION_SAVINGS_ASSUMPTIONS)) }));
+  const maxCost = Math.max(...series.flatMap((s)=>s.points),1);
+  const W=640,H=280,padL=56,padR=18,padT=16,padB=38,chartW=W-padL-padR,chartH=H-padT-padB;
+  const x=(i)=>padL + (i/(samples.length-1))*chartW;
+  const y=(cost)=>padT + chartH - (cost/maxCost)*chartH;
+  const grid=[0,.25,.5,.75,1].map((t)=>{const gy=padT+chartH*(1-t);const v=Math.round(maxCost*t);return `<line class='curve-grid' x1='${padL}' y1='${gy}' x2='${W-padR}' y2='${gy}'/><text class='curve-label' x='8' y='${gy+4}'>$${(v/1000).toFixed(0)}k</text>`;}).join('');
+  const lines=series.map((s)=>{const d=s.points.map((c,i)=>`${i===0?'M':'L'}${x(i)},${y(c)}`).join(' ');return `<path class='curve-line ${selectedModel===s.key?'active':''}' stroke='${s.color}' d='${d}'/>`;}).join('');
+  const xLabels=samples.map((kw,i)=> i%2===0 ? `<text class='curve-label' x='${x(i)}' y='${H-14}' text-anchor='middle'>${kw}</text>` : '').join('');
+  infrastructureCurveChart.innerHTML = `${grid}<line class='curve-axis' x1='${padL}' y1='${padT}' x2='${padL}' y2='${H-padB}'/><line class='curve-axis' x1='${padL}' y1='${H-padB}' x2='${W-padR}' y2='${H-padB}'/>${lines}${xLabels}<text class='curve-label' x='${W/2}' y='${H-2}' text-anchor='middle'>Demand growth (kW)</text><text class='curve-label' x='14' y='14'>Infrastructure cost</text>`;
+  infrastructureCurveLegend.innerHTML = defs.map((d)=>`<div class='curve-chip'><span class='curve-swatch' style='background:${d.color}'></span>${d.label}${selectedModel===d.key?' (selected)':''}</div>`).join('');
+}
+
 // Strategy profiles centralize weighting logic so campaign plans can be tuned in one place.
 const STRATEGY_PROFILES = {
   adoption: { householdTopShare: 0.58, budgetWeight: 1.05, liftWeight: 1.2, barrierWeight: 0.85 },
@@ -39,6 +88,9 @@ const dominionSavingsCards=document.getElementById('dominionSavingsCards');
 const dominionSavingsExplanation=document.getElementById('dominionSavingsExplanation');
 const opportunityCostComparison=document.getElementById('opportunityCostComparison');
 const opportunityCostSavingsValue=document.getElementById('opportunityCostSavingsValue');
+const infrastructureCostModel=document.getElementById('infrastructureCostModel');
+const infrastructureCurveChart=document.getElementById('infrastructureCurveChart');
+const infrastructureCurveLegend=document.getElementById('infrastructureCurveLegend');
 let displayedCampaigns = [];
 
 const countyMap=document.getElementById('countyMap');
@@ -793,7 +845,8 @@ function renderDominionSavings(rows){
   const totalCost = marketingCost + programCost;
   const netSavings = avoidedInfrastructureCost - marketingCost - programCost;
   const projectedPeakGrowthKW = peakLoadReductionKW;
-  const traditionalInfrastructureCost = projectedPeakGrowthKW * assumptions.costPerKWOfPeakCapacity;
+  const selectedModel = infrastructureCostModel?.value || 'stepwise';
+  const traditionalInfrastructureCost = getInfrastructureCostByModel(projectedPeakGrowthKW, selectedModel, assumptions);
   const derProgramCost = marketingCost + programCost;
   const opportunityCostSavings = traditionalInfrastructureCost - derProgramCost;
 
@@ -813,12 +866,14 @@ function renderDominionSavings(rows){
     .join('');
 
 
+  renderInfrastructureCurve(selectedModel);
+
   if(opportunityCostComparison){
     opportunityCostComparison.innerHTML = `
       <article class='opportunity-card'>
         <h3>Scenario A: Traditional infrastructure buildout</h3>
-        <p>Cost comes from added peak capacity needed.</p>
-        <code>projectedPeakGrowthKW × costPerKWOfPeakCapacity</code>
+        <p>Cost follows the selected cost-curve model for projected demand growth.</p>
+        <code>infrastructureCost(projectedPeakGrowthKW, selectedModel)</code>
         <strong>$${Math.round(traditionalInfrastructureCost).toLocaleString()}</strong>
       </article>
       <article class='opportunity-card'>
@@ -834,7 +889,7 @@ function renderDominionSavings(rows){
     opportunityCostSavingsValue.textContent = `$${Math.round(opportunityCostSavings).toLocaleString()}`;
   }
 
-  dominionSavingsExplanation.textContent = `Estimate only: ${targetedHouseholds.toLocaleString()} targeted households yield about ${baseAdopters.toFixed(0)} base adopters, with a campaign-manager lift of ${(weightedAdoptionLift * 100).toFixed(1)}% producing about ${adopters.toFixed(0)} modeled adopters. At ${assumptions.averageDERPeakReductionKW.toFixed(2)} kW average peak reduction per adopter, modeled peak reduction is ${peakLoadReductionKW.toFixed(0)} kW. This implies about $${Math.round(avoidedInfrastructureCost).toLocaleString()} in avoided peak-capacity infrastructure cost (plus about $${Math.round(capacityValueEstimate).toLocaleString()} in wholesale capacity value estimate). Estimated marketing cost is $${Math.round(marketingCost).toLocaleString()} and estimated program incentives are $${Math.round(programCost).toLocaleString()} (optional subsidy estimate: $${Math.round(subsidyCost).toLocaleString()}). Estimated net Dominion savings are $${Math.round(netSavings).toLocaleString()} with estimated ROI of ${(roi * 100).toFixed(1)}%.`;
+  dominionSavingsExplanation.textContent = `Estimate only (${selectedModel} model): ${targetedHouseholds.toLocaleString()} targeted households yield about ${baseAdopters.toFixed(0)} base adopters, with a campaign-manager lift of ${(weightedAdoptionLift * 100).toFixed(1)}% producing about ${adopters.toFixed(0)} modeled adopters. At ${assumptions.averageDERPeakReductionKW.toFixed(2)} kW average peak reduction per adopter, modeled peak reduction is ${peakLoadReductionKW.toFixed(0)} kW. This implies about $${Math.round(avoidedInfrastructureCost).toLocaleString()} in avoided peak-capacity infrastructure cost (plus about $${Math.round(capacityValueEstimate).toLocaleString()} in wholesale capacity value estimate). Estimated marketing cost is $${Math.round(marketingCost).toLocaleString()} and estimated program incentives are $${Math.round(programCost).toLocaleString()} (optional subsidy estimate: $${Math.round(subsidyCost).toLocaleString()}). Estimated net Dominion savings are $${Math.round(netSavings).toLocaleString()} with estimated ROI of ${(roi * 100).toFixed(1)}%.`;
 }
 
 async function init(){
@@ -846,6 +901,7 @@ async function init(){
 ['countyFilter','incomeFilter','derFilter','minAdoption','goalFilter','strategyFilter'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{minValue.textContent=`${minAdoption.value}%`;render();}));
 campaignObjective?.addEventListener('input', render);
 exportCampaignPlanBtn?.addEventListener('click', ()=>exportCampaignPlanCsv(displayedCampaigns));
+infrastructureCostModel?.addEventListener('input', render);
 
 document.querySelectorAll('.tab-btn').forEach((btn)=>{
   btn.addEventListener('click', ()=>{
