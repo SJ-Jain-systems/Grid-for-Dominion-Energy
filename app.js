@@ -9,7 +9,9 @@ const DOMINION_SAVINGS_ASSUMPTIONS = {
   incentivePerAdopter: 620,
   averageDERPeakReductionKW: 1.35,
   wholesaleCapacityValuePerKW: 145,
-  subsidyPerAdopter: 120
+  subsidyPerAdopter: 120,
+  emergencyPricePerKW: 300,
+  emergencyExcessCapacityShare: 0.2
 };
 
 
@@ -86,6 +88,8 @@ const kpiContext=document.getElementById('kpiContext');
 const campaignKpiCards=document.getElementById('campaignKpiCards');
 const dominionSavingsCards=document.getElementById('dominionSavingsCards');
 const dominionSavingsExplanation=document.getElementById('dominionSavingsExplanation');
+const derGridValueCards=document.getElementById('derGridValueCards');
+const derGridValueExplanation=document.getElementById('derGridValueExplanation');
 const opportunityCostComparison=document.getElementById('opportunityCostComparison');
 const opportunityCostSavingsValue=document.getElementById('opportunityCostSavingsValue');
 const infrastructureCostModel=document.getElementById('infrastructureCostModel');
@@ -820,7 +824,9 @@ function renderDominionSavings(rows){
   const analyzed = Array.isArray(rows) ? rows : [];
   if(!analyzed.length){
     dominionSavingsCards.innerHTML = "<div class='card'>No households match current filters.<b>n/a</b></div>";
+    if(derGridValueCards) derGridValueCards.innerHTML = "<div class='card'>No households match current filters.<b>n/a</b></div>";
     dominionSavingsExplanation.textContent = 'Adjust filters to estimate how DER adoption could reduce peak events and avoid grid infrastructure costs.';
+    if(derGridValueExplanation) derGridValueExplanation.textContent = 'Adjust filters to estimate virtual power plant and emergency grid-capacity value from DER adoption.';
     if(opportunityCostComparison) opportunityCostComparison.innerHTML = '';
     if(opportunityCostSavingsValue) opportunityCostSavingsValue.textContent = '$0';
     return;
@@ -842,6 +848,13 @@ function renderDominionSavings(rows){
   const marketingCost = targetedHouseholds * assumptions.marketingCostPerHousehold;
   const programCost = adopters * assumptions.incentivePerAdopter;
   const subsidyCost = adopters * assumptions.subsidyPerAdopter;
+  const enrolledDERCapacityKW = peakLoadReductionKW;
+  const vppValue = enrolledDERCapacityKW * assumptions.wholesaleCapacityValuePerKW;
+  const excessCapacityKW = enrolledDERCapacityKW * assumptions.emergencyExcessCapacityShare;
+  const emergencyCapacityValue = excessCapacityKW * assumptions.emergencyPricePerKW;
+  const subsidyValue = subsidyCost;
+  const totalDERValue = avoidedInfrastructureCost + vppValue + emergencyCapacityValue + subsidyValue;
+  const netUtilityValue = totalDERValue - marketingCost - programCost;
   const totalCost = marketingCost + programCost;
   const netSavings = avoidedInfrastructureCost - marketingCost - programCost;
   const projectedPeakGrowthKW = peakLoadReductionKW;
@@ -865,6 +878,22 @@ function renderDominionSavings(rows){
     .map(([k, v]) => `<div class='card'>${k}<b>${v}</b></div>`)
     .join('');
 
+  if(derGridValueCards){
+    const derValueKpis = [
+      ['Virtual power plant value', `$${Math.round(vppValue).toLocaleString()}`],
+      ['Emergency capacity value', `$${Math.round(emergencyCapacityValue).toLocaleString()}`],
+      ['Subsidy value', `$${Math.round(subsidyValue).toLocaleString()}`],
+      ['Total DER grid value', `$${Math.round(totalDERValue).toLocaleString()}`],
+      ['Net utility value', `$${Math.round(netUtilityValue).toLocaleString()}`]
+    ];
+    derGridValueCards.innerHTML = derValueKpis
+      .map(([k, v]) => `<div class='card'>${k}<b>${v}</b></div>`)
+      .join('');
+  }
+
+  if(derGridValueExplanation){
+    derGridValueExplanation.textContent = `Aggregated DERs can act like a virtual power plant: Dominion can enroll about ${enrolledDERCapacityKW.toFixed(0)} kW of flexible customer-side resources, monetize roughly $${Math.round(vppValue).toLocaleString()} in wholesale capacity value, and keep about ${excessCapacityKW.toFixed(0)} kW as emergency excess capacity worth around $${Math.round(emergencyCapacityValue).toLocaleString()} during stressed grid conditions. Adding subsidy value of about $${Math.round(subsidyValue).toLocaleString()} on top of avoided infrastructure cost yields about $${Math.round(totalDERValue).toLocaleString()} in total DER grid value. After estimated marketing and program costs, net utility value is about $${Math.round(netUtilityValue).toLocaleString()}.`;
+  }
 
   renderInfrastructureCurve(selectedModel);
 
