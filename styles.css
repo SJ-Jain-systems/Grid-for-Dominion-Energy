@@ -222,11 +222,6 @@ button{
 .policy-subsidy{display:grid;gap:12px;background:linear-gradient(180deg,#fff,#f8fbff)}
 .marketing-efficiency{display:grid;gap:12px;background:linear-gradient(180deg,#fff,#f8fbff)}
 .marketing-note{font-size:13px}
-.policy-placeholder-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
-.policy-placeholder{border:1px dashed var(--line-strong);border-radius:12px;padding:10px 12px;background:#fff;display:grid;gap:6px}
-.policy-placeholder span{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#48618c;font-weight:700}
-.policy-placeholder b{font-size:14px;color:#2f4f86}
-.policy-note{font-size:13px;color:#48618c}
 
 
 .savings-hero{display:grid;grid-template-columns:1.8fr 1fr;gap:20px;border-color:var(--line-strong);background:linear-gradient(135deg,#ffffff 0%,#f2f7ff 100%);box-shadow:var(--shadow-md)}
