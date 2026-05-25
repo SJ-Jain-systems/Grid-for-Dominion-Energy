@@ -87,32 +87,65 @@
     </section>
 
     <section id="dominionSavingsTab" class="tab-panel">
-      <section class="panel">
-        <h2>Why Dominion Savings Matter</h2>
-        <p>
-          Utilities often build expensive infrastructure to satisfy rare peak-demand events, especially on the hottest and highest-load days.
-          When distributed energy resources (DERs) reduce those peaks, Dominion can defer or avoid portions of that capital buildout.
-          That creates utility-side value beyond household bill savings and beyond baseline regulatory compliance outcomes.
-        </p>
+      <section class="panel savings-hero">
+        <div>
+          <p class="eyebrow">Executive dashboard</p>
+          <h2>Dominion Savings Business Case</h2>
+          <p>Modeled DER adoption can reduce peak stress, defer infrastructure spend, and improve campaign economics.</p>
+        </div>
+        <div class="hero-meta">
+          <span>Virginia pilot scope</span>
+          <span>Decision support view</span>
+          <span>Scenario-based estimates</span>
+        </div>
       </section>
 
       <section class="cards" id="dominionSavingsCards"></section>
-      <section class="panel">
-        <p id="dominionSavingsExplanation"></p>
+
+      <section class="two-col-layout">
+        <article class="panel compact-panel">
+          <h3>Modeled results summary</h3>
+          <p id="dominionSavingsExplanation"></p>
+        </article>
+        <article class="panel compact-panel">
+          <h3>Business case lens</h3>
+          <table class="mini-table">
+            <tbody>
+              <tr><th>Primary goal</th><td>Avoid incremental peak-capacity investment</td></tr>
+              <tr><th>Value pathways</th><td>Infrastructure deferral, VPP value, emergency support</td></tr>
+              <tr><th>Cost inputs</th><td>Marketing, incentives, and adoption support</td></tr>
+              <tr><th>Use case</th><td>Portfolio planning and campaign prioritization</td></tr>
+            </tbody>
+          </table>
+        </article>
       </section>
 
-      <section class="panel">
+      <section class="panel section-head">
         <h2>DER Revenue and Grid Value</h2>
-        <p>Aggregated DERs can act like a virtual power plant, where flexible customer-side energy resources reduce stress on the grid and can provide capacity during emergencies.</p>
+        <p>Aggregated DERs can act like a virtual power plant and provide reserve value during stressed grid periods.</p>
       </section>
       <section class="cards" id="derGridValueCards"></section>
-      <section class="panel">
-        <p id="derGridValueExplanation"></p>
+
+      <section class="two-col-layout">
+        <article class="panel compact-panel">
+          <h3>Grid value narrative</h3>
+          <p id="derGridValueExplanation"></p>
+        </article>
+        <article class="panel compact-panel">
+          <h3>Interpretation guide</h3>
+          <table class="mini-table">
+            <tbody>
+              <tr><th>VPP value</th><td>Capacity market monetization estimate</td></tr>
+              <tr><th>Emergency value</th><td>High-stress event capacity reserve estimate</td></tr>
+              <tr><th>Net utility value</th><td>Total grid value minus marketing + incentive cost</td></tr>
+            </tbody>
+          </table>
+        </article>
       </section>
 
       <section class="panel marketing-efficiency">
         <h2>Marketing Efficiency</h2>
-        <p>Compare broad outreach with targeted DER campaigns to show how better household targeting can improve adoption economics.</p>
+        <p>Compare broad outreach with ranked targeting to quantify acquisition-efficiency gains.</p>
         <section class="cards" id="marketingEfficiencyCards"></section>
         <p id="marketingEfficiencyExplanation" class="marketing-note"></p>
       </section>
@@ -122,7 +155,7 @@
 
       <section class="panel policy-subsidy">
         <h2>Policy and Subsidy</h2>
-        <p>Scenario-based estimate of potential DER adoption support. Values are adjustable assumptions, not legal determinations.</p>
+        <p>Scenario assumptions for program support and incentive planning.</p>
         <section class="cards" id="policySubsidyCards"></section>
         <div class="policy-placeholder-grid" id="policyPlaceholderList"></div>
         <p class="policy-note">These are scenario assumptions and should be replaced with actual program-specific incentive values when available.</p>
