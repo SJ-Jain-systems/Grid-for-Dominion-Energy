@@ -895,7 +895,6 @@ function renderDominionSavings(rows){
   const kpis = [
     ['Estimated peak load reduction (modeled)', `${peakLoadReductionKW.toFixed(0)} kW`],
     ['Estimated avoided infrastructure cost', `$${Math.round(avoidedInfrastructureCost).toLocaleString()}`],
-    ['Estimated marketing cost', `$${Math.round(marketingCost).toLocaleString()}`],
     ['Estimated program cost (incentives)', `$${Math.round(programCost).toLocaleString()}`],
     ['Estimated net Dominion savings', `$${Math.round(netSavings).toLocaleString()}`],
     ['Estimated ROI (net / total costs)', `${(roi * 100).toFixed(1)}%`]
