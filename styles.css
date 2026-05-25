@@ -217,6 +217,8 @@ button{
 .curve-line.active{stroke-width:4.5}
 
 .policy-subsidy{display:grid;gap:12px;background:linear-gradient(180deg,#fff,#f8fbff)}
+.marketing-efficiency{display:grid;gap:12px;background:linear-gradient(180deg,#fff,#f8fbff)}
+.marketing-note{font-size:13px}
 .policy-placeholder-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
 .policy-placeholder{border:1px dashed var(--line-strong);border-radius:12px;padding:10px 12px;background:#fff;display:grid;gap:6px}
 .policy-placeholder span{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#48618c;font-weight:700}
