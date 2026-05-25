@@ -101,6 +101,21 @@
         <p id="dominionSavingsExplanation"></p>
       </section>
 
+
+      <section class="panel infrastructure-curve">
+        <h2>Infrastructure Cost Curve</h2>
+        <p>Grid infrastructure investment is often non-linear. This view compares three cost assumptions for the same projected demand growth and updates avoided infrastructure cost using the selected model.</p>
+        <label class="curve-model-selector">Infrastructure cost model
+          <select id="infrastructureCostModel">
+            <option value="stepwise" selected>Stepwise (Lumpy) — default</option>
+            <option value="linear">Linear</option>
+            <option value="stress">Stress curve (Exponential)</option>
+          </select>
+        </label>
+        <div id="infrastructureCurveLegend" class="curve-legend"></div>
+        <svg id="infrastructureCurveChart" viewBox="0 0 640 280" class="infrastructure-chart" role="img" aria-label="Infrastructure cost curve comparison chart"></svg>
+      </section>
+
       <section class="panel opportunity-cost">
         <h2>Opportunity Cost</h2>
         <p>Opportunity cost reflects infrastructure spending Dominion would otherwise make to serve rare peak-demand events. DER programs can replace part of that buildout with lower-cost customer programs.</p>
