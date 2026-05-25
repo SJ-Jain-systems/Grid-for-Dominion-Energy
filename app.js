@@ -92,7 +92,6 @@ const derGridValueExplanation=document.getElementById('derGridValueExplanation')
 const marketingEfficiencyCards=document.getElementById('marketingEfficiencyCards');
 const marketingEfficiencyExplanation=document.getElementById('marketingEfficiencyExplanation');
 const policySubsidyCards=document.getElementById('policySubsidyCards');
-const policyPlaceholderList=document.getElementById('policyPlaceholderList');
 const opportunityCostComparison=document.getElementById('opportunityCostComparison');
 const opportunityCostSavingsValue=document.getElementById('opportunityCostSavingsValue');
 const infrastructureCostModel=document.getElementById('infrastructureCostModel');
@@ -663,7 +662,6 @@ function renderCampaigns(rows){
     <article class="card campaign-card">
       <div class="campaign-card-head">
         <h3>${c.campaignName}</h3>
-        ${idx < 3 ? '<span class="launch-badge">Launch Candidate</span>' : ''}
       </div>
       <div class="campaign-metric">
         <span class="campaign-label">Audience size</span>
@@ -834,7 +832,6 @@ function renderDominionSavings(rows){
     if(marketingEfficiencyExplanation) marketingEfficiencyExplanation.textContent = 'Adjust filters to compare broad outreach against targeted DER campaigns.';
     if(opportunityCostComparison) opportunityCostComparison.innerHTML = '';
     if(policySubsidyCards) policySubsidyCards.innerHTML = "<div class='card'>No households match current filters.<b>n/a</b></div>";
-    if(policyPlaceholderList) policyPlaceholderList.innerHTML = '';
     if(opportunityCostSavingsValue) opportunityCostSavingsValue.textContent = '$0';
     return;
   }
@@ -943,18 +940,6 @@ function renderDominionSavings(rows){
     ];
     policySubsidyCards.innerHTML = policyKpis
       .map(([k, v]) => `<div class='card'>${k}<b>${v}</b></div>`)
-      .join('');
-  }
-
-  if(policyPlaceholderList){
-    const placeholders = [
-      'Federal/state program support',
-      'Clean energy incentives',
-      'Demand response program incentives',
-      'Low-income electrification or efficiency support'
-    ];
-    policyPlaceholderList.innerHTML = placeholders
-      .map((label)=> `<article class='policy-placeholder'><span>${label}</span><b>Scenario input placeholder</b></article>`)
       .join('');
   }
 
