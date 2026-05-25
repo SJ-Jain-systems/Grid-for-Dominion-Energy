@@ -11,27 +11,26 @@ const DOMINION_SAVINGS_ASSUMPTIONS = {
   wholesaleCapacityValuePerKW: 145,
   subsidyPerAdopter: 120,
   emergencyPricePerKW: 300,
-  emergencyExcessCapacityShare: 0.2
-};
-
-
-const INFRASTRUCTURE_CURVE_ASSUMPTIONS = {
-  stepThresholdsKW: [120, 260, 420],
-  stepCostByTier: [140000, 170000, 210000],
-  stressAnchorKW: 450,
-  stressBaseCostPerKW: 1080,
-  stressSteepness: 2.4
+  emergencyExcessCapacityShare: 0.2,
+  infrastructureCurve: {
+    stepThresholdsKW: [120, 260, 420],
+    stepCostByTier: [140000, 170000, 210000],
+    stressAnchorKW: 450,
+    stressBaseCostPerKW: 1080,
+    stressSteepness: 2.4
+  }
 };
 
 function getInfrastructureCostByModel(demandGrowthKW, model, assumptions){
   const modeledKW = Math.max(0, demandGrowthKW || 0);
+  const curveAssumptions = assumptions.infrastructureCurve;
   if(model === 'linear') return modeledKW * assumptions.costPerKWOfPeakCapacity;
   if(model === 'stress'){
-    const normalized = modeledKW / INFRASTRUCTURE_CURVE_ASSUMPTIONS.stressAnchorKW;
-    return modeledKW * INFRASTRUCTURE_CURVE_ASSUMPTIONS.stressBaseCostPerKW * (1 + Math.pow(normalized, INFRASTRUCTURE_CURVE_ASSUMPTIONS.stressSteepness));
+    const normalized = modeledKW / curveAssumptions.stressAnchorKW;
+    return modeledKW * curveAssumptions.stressBaseCostPerKW * (1 + Math.pow(normalized, curveAssumptions.stressSteepness));
   }
-  const thresholds = INFRASTRUCTURE_CURVE_ASSUMPTIONS.stepThresholdsKW;
-  const tierCosts = INFRASTRUCTURE_CURVE_ASSUMPTIONS.stepCostByTier;
+  const thresholds = curveAssumptions.stepThresholdsKW;
+  const tierCosts = curveAssumptions.stepCostByTier;
   let total = 0;
   for(let i=0;i<thresholds.length;i++){
     if(modeledKW > thresholds[i]) total += tierCosts[i];
@@ -851,8 +850,10 @@ function renderDominionSavings(rows){
 
   const adopters = baseAdopters * (1 + weightedAdoptionLift);
   const peakLoadReductionKW = adopters * assumptions.averageDERPeakReductionKW;
+  // Avoided infrastructure cost = modeled peak reduction * assumed utility avoided cost per kW.
   const avoidedInfrastructureCost = peakLoadReductionKW * assumptions.costPerKWOfPeakCapacity;
   const capacityValueEstimate = peakLoadReductionKW * assumptions.wholesaleCapacityValuePerKW;
+  // Marketing cost = targeted households * average campaign cost per household.
   const marketingCost = targetedHouseholds * assumptions.marketingCostPerHousehold;
   const broadAudienceSize = Math.round(targetedHouseholds * 3.2);
   const broadCostPerHousehold = assumptions.marketingCostPerHousehold * 1.35;
@@ -870,11 +871,14 @@ function renderDominionSavings(rows){
   const programCost = adopters * assumptions.incentivePerAdopter;
   const subsidyCost = adopters * assumptions.subsidyPerAdopter;
   const enrolledDERCapacityKW = peakLoadReductionKW;
+  // Virtual power plant value = dispatchable DER kW * wholesale capacity value per kW.
   const vppValue = enrolledDERCapacityKW * assumptions.wholesaleCapacityValuePerKW;
   const excessCapacityKW = enrolledDERCapacityKW * assumptions.emergencyExcessCapacityShare;
   const emergencyCapacityValue = excessCapacityKW * assumptions.emergencyPricePerKW;
+  // Subsidy value = modeled adopters * assumed subsidy per adopter.
   const subsidyValue = subsidyCost;
   const totalDERValue = avoidedInfrastructureCost + vppValue + emergencyCapacityValue + subsidyValue;
+  // Net utility savings/value = scenario DER value - marketing costs - incentive/program costs.
   const netUtilityValue = totalDERValue - marketingCost - programCost;
   const totalCost = marketingCost + programCost;
   const netSavings = avoidedInfrastructureCost - marketingCost - programCost;
@@ -882,8 +886,10 @@ function renderDominionSavings(rows){
   const selectedModel = infrastructureCostModel?.value || 'stepwise';
   const traditionalInfrastructureCost = getInfrastructureCostByModel(projectedPeakGrowthKW, selectedModel, assumptions);
   const derProgramCost = marketingCost + programCost;
+  // Opportunity-cost savings = traditional infrastructure scenario cost - DER strategy scenario cost.
   const opportunityCostSavings = traditionalInfrastructureCost - derProgramCost;
 
+  // ROI = net savings divided by total program + marketing costs.
   const roi = totalCost > 0 ? netSavings / totalCost : 0;
 
   const kpis = [
