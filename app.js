@@ -90,6 +90,8 @@ const dominionSavingsCards=document.getElementById('dominionSavingsCards');
 const dominionSavingsExplanation=document.getElementById('dominionSavingsExplanation');
 const derGridValueCards=document.getElementById('derGridValueCards');
 const derGridValueExplanation=document.getElementById('derGridValueExplanation');
+const marketingEfficiencyCards=document.getElementById('marketingEfficiencyCards');
+const marketingEfficiencyExplanation=document.getElementById('marketingEfficiencyExplanation');
 const policySubsidyCards=document.getElementById('policySubsidyCards');
 const policyPlaceholderList=document.getElementById('policyPlaceholderList');
 const opportunityCostComparison=document.getElementById('opportunityCostComparison');
@@ -829,6 +831,8 @@ function renderDominionSavings(rows){
     if(derGridValueCards) derGridValueCards.innerHTML = "<div class='card'>No households match current filters.<b>n/a</b></div>";
     dominionSavingsExplanation.textContent = 'Adjust filters to estimate how DER adoption could reduce peak events and avoid grid infrastructure costs.';
     if(derGridValueExplanation) derGridValueExplanation.textContent = 'Adjust filters to estimate virtual power plant and emergency grid-capacity value from DER adoption.';
+    if(marketingEfficiencyCards) marketingEfficiencyCards.innerHTML = "<div class='card'>No households match current filters.<b>n/a</b></div>";
+    if(marketingEfficiencyExplanation) marketingEfficiencyExplanation.textContent = 'Adjust filters to compare broad outreach against targeted DER campaigns.';
     if(opportunityCostComparison) opportunityCostComparison.innerHTML = '';
     if(policySubsidyCards) policySubsidyCards.innerHTML = "<div class='card'>No households match current filters.<b>n/a</b></div>";
     if(policyPlaceholderList) policyPlaceholderList.innerHTML = '';
@@ -850,6 +854,19 @@ function renderDominionSavings(rows){
   const avoidedInfrastructureCost = peakLoadReductionKW * assumptions.costPerKWOfPeakCapacity;
   const capacityValueEstimate = peakLoadReductionKW * assumptions.wholesaleCapacityValuePerKW;
   const marketingCost = targetedHouseholds * assumptions.marketingCostPerHousehold;
+  const broadAudienceSize = Math.round(targetedHouseholds * 3.2);
+  const broadCostPerHousehold = assumptions.marketingCostPerHousehold * 1.35;
+  const targetedCostPerHousehold = assumptions.marketingCostPerHousehold * 0.72;
+  const broadConversionRate = 0.07;
+  const targetedConversionRate = Math.min(0.38, (adopters / Math.max(targetedHouseholds, 1)) * 1.05);
+  const broadExpectedAdopters = Math.max(1, broadAudienceSize * broadConversionRate);
+  const targetedExpectedAdopters = Math.max(1, targetedHouseholds * targetedConversionRate);
+  const broadMarketingCost = broadAudienceSize * broadCostPerHousehold;
+  const targetedMarketingCost = targetedHouseholds * targetedCostPerHousehold;
+  const costPerAdoptionBroad = broadMarketingCost / broadExpectedAdopters;
+  const costPerAdoptionTargeted = targetedMarketingCost / targetedExpectedAdopters;
+  const marketingSavings = broadMarketingCost - targetedMarketingCost;
+  const adoptionLift = targetedExpectedAdopters - broadExpectedAdopters;
   const programCost = adopters * assumptions.incentivePerAdopter;
   const subsidyCost = adopters * assumptions.subsidyPerAdopter;
   const enrolledDERCapacityKW = peakLoadReductionKW;
@@ -897,6 +914,20 @@ function renderDominionSavings(rows){
 
   if(derGridValueExplanation){
     derGridValueExplanation.textContent = `Aggregated DERs can act like a virtual power plant: Dominion can enroll about ${enrolledDERCapacityKW.toFixed(0)} kW of flexible customer-side resources, monetize roughly $${Math.round(vppValue).toLocaleString()} in wholesale capacity value, and keep about ${excessCapacityKW.toFixed(0)} kW as emergency excess capacity worth around $${Math.round(emergencyCapacityValue).toLocaleString()} during stressed grid conditions. Adding subsidy value of about $${Math.round(subsidyValue).toLocaleString()} on top of avoided infrastructure cost yields about $${Math.round(totalDERValue).toLocaleString()} in total DER grid value. After estimated marketing and program costs, net utility value is about $${Math.round(netUtilityValue).toLocaleString()}.`;
+  }
+  if(marketingEfficiencyCards){
+    const marketingKpis = [
+      ['Broad campaign cost per adoption', `$${Math.round(costPerAdoptionBroad).toLocaleString()}`],
+      ['Targeted campaign cost per adoption', `$${Math.round(costPerAdoptionTargeted).toLocaleString()}`],
+      ['Marketing savings', `$${Math.round(marketingSavings).toLocaleString()}`],
+      ['Adoption lift', `${Math.round(adoptionLift).toLocaleString()} households`]
+    ];
+    marketingEfficiencyCards.innerHTML = marketingKpis
+      .map(([k,v])=>`<div class='card'>${k}<b>${v}</b></div>`)
+      .join('');
+  }
+  if(marketingEfficiencyExplanation){
+    marketingEfficiencyExplanation.textContent = `Broad campaign scenario reaches ${broadAudienceSize.toLocaleString()} households at $${broadCostPerHousehold.toFixed(0)} per household with a ${(broadConversionRate*100).toFixed(1)}% conversion rate. Targeted DER campaign reaches ${targetedHouseholds.toLocaleString()} ranked households at $${targetedCostPerHousehold.toFixed(0)} per household with a ${(targetedConversionRate*100).toFixed(1)}% conversion rate based on readiness, affordability, and grid value ranking.`;
   }
 
   if(policySubsidyCards){
