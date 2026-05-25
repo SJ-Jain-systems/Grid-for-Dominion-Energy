@@ -37,6 +37,8 @@ const kpiContext=document.getElementById('kpiContext');
 const campaignKpiCards=document.getElementById('campaignKpiCards');
 const dominionSavingsCards=document.getElementById('dominionSavingsCards');
 const dominionSavingsExplanation=document.getElementById('dominionSavingsExplanation');
+const opportunityCostComparison=document.getElementById('opportunityCostComparison');
+const opportunityCostSavingsValue=document.getElementById('opportunityCostSavingsValue');
 let displayedCampaigns = [];
 
 const countyMap=document.getElementById('countyMap');
@@ -767,6 +769,8 @@ function renderDominionSavings(rows){
   if(!analyzed.length){
     dominionSavingsCards.innerHTML = "<div class='card'>No households match current filters.<b>n/a</b></div>";
     dominionSavingsExplanation.textContent = 'Adjust filters to estimate how DER adoption could reduce peak events and avoid grid infrastructure costs.';
+    if(opportunityCostComparison) opportunityCostComparison.innerHTML = '';
+    if(opportunityCostSavingsValue) opportunityCostSavingsValue.textContent = '$0';
     return;
   }
 
@@ -788,6 +792,11 @@ function renderDominionSavings(rows){
   const subsidyCost = adopters * assumptions.subsidyPerAdopter;
   const totalCost = marketingCost + programCost;
   const netSavings = avoidedInfrastructureCost - marketingCost - programCost;
+  const projectedPeakGrowthKW = peakLoadReductionKW;
+  const traditionalInfrastructureCost = projectedPeakGrowthKW * assumptions.costPerKWOfPeakCapacity;
+  const derProgramCost = marketingCost + programCost;
+  const opportunityCostSavings = traditionalInfrastructureCost - derProgramCost;
+
   const roi = totalCost > 0 ? netSavings / totalCost : 0;
 
   const kpis = [
@@ -802,6 +811,28 @@ function renderDominionSavings(rows){
   dominionSavingsCards.innerHTML = kpis
     .map(([k, v]) => `<div class='card'>${k}<b>${v}</b></div>`)
     .join('');
+
+
+  if(opportunityCostComparison){
+    opportunityCostComparison.innerHTML = `
+      <article class='opportunity-card'>
+        <h3>Scenario A: Traditional infrastructure buildout</h3>
+        <p>Cost comes from added peak capacity needed.</p>
+        <code>projectedPeakGrowthKW × costPerKWOfPeakCapacity</code>
+        <strong>$${Math.round(traditionalInfrastructureCost).toLocaleString()}</strong>
+      </article>
+      <article class='opportunity-card'>
+        <h3>Scenario B: DER adoption strategy</h3>
+        <p>Cost comes from marketing, incentives, and program support.</p>
+        <code>marketingCost + programCost</code>
+        <strong>$${Math.round(derProgramCost).toLocaleString()}</strong>
+      </article>
+    `;
+  }
+
+  if(opportunityCostSavingsValue){
+    opportunityCostSavingsValue.textContent = `$${Math.round(opportunityCostSavings).toLocaleString()}`;
+  }
 
   dominionSavingsExplanation.textContent = `Estimate only: ${targetedHouseholds.toLocaleString()} targeted households yield about ${baseAdopters.toFixed(0)} base adopters, with a campaign-manager lift of ${(weightedAdoptionLift * 100).toFixed(1)}% producing about ${adopters.toFixed(0)} modeled adopters. At ${assumptions.averageDERPeakReductionKW.toFixed(2)} kW average peak reduction per adopter, modeled peak reduction is ${peakLoadReductionKW.toFixed(0)} kW. This implies about $${Math.round(avoidedInfrastructureCost).toLocaleString()} in avoided peak-capacity infrastructure cost (plus about $${Math.round(capacityValueEstimate).toLocaleString()} in wholesale capacity value estimate). Estimated marketing cost is $${Math.round(marketingCost).toLocaleString()} and estimated program incentives are $${Math.round(programCost).toLocaleString()} (optional subsidy estimate: $${Math.round(subsidyCost).toLocaleString()}). Estimated net Dominion savings are $${Math.round(netSavings).toLocaleString()} with estimated ROI of ${(roi * 100).toFixed(1)}%.`;
 }

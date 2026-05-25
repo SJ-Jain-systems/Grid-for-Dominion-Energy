@@ -191,3 +191,14 @@ button{
   .campaign-card-head{flex-direction:column}
   header{position:static;flex-direction:column;align-items:flex-start}
 }
+
+.opportunity-cost{display:grid;gap:14px;background:linear-gradient(180deg,#fff,#f8fbff)}
+.opportunity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.opportunity-card{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff;display:grid;gap:8px}
+.opportunity-card h3{margin:0;font-size:15px;color:var(--blue-900)}
+.opportunity-card p{margin:0;font-size:13px}
+.opportunity-card code{padding:7px 9px;border-radius:8px;background:var(--blue-050);color:#214578;font-size:12px}
+.opportunity-card strong{font-size:20px;color:var(--blue-800)}
+.opportunity-result{display:flex;justify-content:space-between;align-items:baseline;padding:12px 14px;border-radius:12px;border:1px solid var(--line-strong);background:#eef4ff;gap:12px}
+.opportunity-result span{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#48618c;font-weight:700}
+.opportunity-result b{font-size:24px;color:var(--blue-800)}
