@@ -90,6 +90,8 @@ const dominionSavingsCards=document.getElementById('dominionSavingsCards');
 const dominionSavingsExplanation=document.getElementById('dominionSavingsExplanation');
 const derGridValueCards=document.getElementById('derGridValueCards');
 const derGridValueExplanation=document.getElementById('derGridValueExplanation');
+const policySubsidyCards=document.getElementById('policySubsidyCards');
+const policyPlaceholderList=document.getElementById('policyPlaceholderList');
 const opportunityCostComparison=document.getElementById('opportunityCostComparison');
 const opportunityCostSavingsValue=document.getElementById('opportunityCostSavingsValue');
 const infrastructureCostModel=document.getElementById('infrastructureCostModel');
@@ -828,6 +830,8 @@ function renderDominionSavings(rows){
     dominionSavingsExplanation.textContent = 'Adjust filters to estimate how DER adoption could reduce peak events and avoid grid infrastructure costs.';
     if(derGridValueExplanation) derGridValueExplanation.textContent = 'Adjust filters to estimate virtual power plant and emergency grid-capacity value from DER adoption.';
     if(opportunityCostComparison) opportunityCostComparison.innerHTML = '';
+    if(policySubsidyCards) policySubsidyCards.innerHTML = "<div class='card'>No households match current filters.<b>n/a</b></div>";
+    if(policyPlaceholderList) policyPlaceholderList.innerHTML = '';
     if(opportunityCostSavingsValue) opportunityCostSavingsValue.textContent = '$0';
     return;
   }
@@ -893,6 +897,29 @@ function renderDominionSavings(rows){
 
   if(derGridValueExplanation){
     derGridValueExplanation.textContent = `Aggregated DERs can act like a virtual power plant: Dominion can enroll about ${enrolledDERCapacityKW.toFixed(0)} kW of flexible customer-side resources, monetize roughly $${Math.round(vppValue).toLocaleString()} in wholesale capacity value, and keep about ${excessCapacityKW.toFixed(0)} kW as emergency excess capacity worth around $${Math.round(emergencyCapacityValue).toLocaleString()} during stressed grid conditions. Adding subsidy value of about $${Math.round(subsidyValue).toLocaleString()} on top of avoided infrastructure cost yields about $${Math.round(totalDERValue).toLocaleString()} in total DER grid value. After estimated marketing and program costs, net utility value is about $${Math.round(netUtilityValue).toLocaleString()}.`;
+  }
+
+  if(policySubsidyCards){
+    const policyKpis = [
+      ['Estimated subsidy per adopter', `$${Math.round(assumptions.subsidyPerAdopter).toLocaleString()}`],
+      ['Expected number of adopters', `${adopters.toFixed(0)}`],
+      ['Total subsidy value', `$${Math.round(subsidyValue).toLocaleString()}`]
+    ];
+    policySubsidyCards.innerHTML = policyKpis
+      .map(([k, v]) => `<div class='card'>${k}<b>${v}</b></div>`)
+      .join('');
+  }
+
+  if(policyPlaceholderList){
+    const placeholders = [
+      'Federal/state program support',
+      'Clean energy incentives',
+      'Demand response program incentives',
+      'Low-income electrification or efficiency support'
+    ];
+    policyPlaceholderList.innerHTML = placeholders
+      .map((label)=> `<article class='policy-placeholder'><span>${label}</span><b>Scenario input placeholder</b></article>`)
+      .join('');
   }
 
   renderInfrastructureCurve(selectedModel);
