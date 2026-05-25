@@ -25,6 +25,8 @@ const kpiCards=document.getElementById('kpiCards');
 const campaignCards=document.getElementById('campaignCards');
 const kpiContext=document.getElementById('kpiContext');
 const campaignKpiCards=document.getElementById('campaignKpiCards');
+const dominionSavingsCards=document.getElementById('dominionSavingsCards');
+const dominionSavingsExplanation=document.getElementById('dominionSavingsExplanation');
 let displayedCampaigns = [];
 
 const countyMap=document.getElementById('countyMap');
@@ -744,7 +746,39 @@ function render(){
   detail.innerHTML=focus ? renderDetail(focus) : 'No households match the current filters.';
   renderCampaigns(rows);
   renderCountyMap(rows,key);
+  renderDominionSavings(rows);
 
+}
+
+function renderDominionSavings(rows){
+  if(!dominionSavingsCards || !dominionSavingsExplanation) return;
+
+  const analyzed = Array.isArray(rows) ? rows : [];
+  if(!analyzed.length){
+    dominionSavingsCards.innerHTML = "<div class='card'>No households match current filters.<b>n/a</b></div>";
+    dominionSavingsExplanation.textContent = 'Adjust filters to estimate how DER adoption could reduce peak events and avoid grid infrastructure costs.';
+    return;
+  }
+
+  const estimatedPeakReductionMw = analyzed.reduce((sum, h) => sum + (h.peak57 * 0.12), 0);
+  const avoidedInfrastructureCost = estimatedPeakReductionMw * 170000;
+  const programMarketingCost = analyzed.length * 780;
+  const netDominionSavings = avoidedInfrastructureCost - programMarketingCost;
+  const roi = programMarketingCost > 0 ? (netDominionSavings / programMarketingCost) * 100 : 0;
+
+  const kpis = [
+    ['Estimated peak load reduction', `${estimatedPeakReductionMw.toFixed(1)} MW`],
+    ['Avoided infrastructure cost', `$${Math.round(avoidedInfrastructureCost).toLocaleString()}`],
+    ['Marketing/program cost', `$${Math.round(programMarketingCost).toLocaleString()}`],
+    ['Net Dominion savings', `$${Math.round(netDominionSavings).toLocaleString()}`],
+    ['Estimated ROI', `${roi.toFixed(1)}%`]
+  ];
+
+  dominionSavingsCards.innerHTML = kpis
+    .map(([k, v]) => `<div class='card'>${k}<b>${v}</b></div>`)
+    .join('');
+
+  dominionSavingsExplanation.textContent = `In this scenario, targeted DER adoption across ${analyzed.length.toLocaleString()} candidate households lowers Dominion's peak demand by about ${estimatedPeakReductionMw.toFixed(1)} MW. Because grid upgrades are often sized for these short-duration peaks, that demand reduction can defer or avoid approximately $${Math.round(avoidedInfrastructureCost).toLocaleString()} in infrastructure spending. After estimated outreach and program delivery costs of $${Math.round(programMarketingCost).toLocaleString()}, Dominion's net savings are about $${Math.round(netDominionSavings).toLocaleString()} (${roi.toFixed(1)}% ROI).`;
 }
 
 async function init(){
