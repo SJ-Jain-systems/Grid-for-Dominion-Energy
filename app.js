@@ -2,6 +2,16 @@ let households = [];
 const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 const TABLE_LIMIT = 25;
 
+
+const DOMINION_SAVINGS_ASSUMPTIONS = {
+  costPerKWOfPeakCapacity: 1700,
+  marketingCostPerHousehold: 185,
+  incentivePerAdopter: 620,
+  averageDERPeakReductionKW: 1.35,
+  wholesaleCapacityValuePerKW: 145,
+  subsidyPerAdopter: 120
+};
+
 // Strategy profiles centralize weighting logic so campaign plans can be tuned in one place.
 const STRATEGY_PROFILES = {
   adoption: { householdTopShare: 0.58, budgetWeight: 1.05, liftWeight: 1.2, barrierWeight: 0.85 },
@@ -760,25 +770,40 @@ function renderDominionSavings(rows){
     return;
   }
 
-  const estimatedPeakReductionMw = analyzed.reduce((sum, h) => sum + (h.peak57 * 0.12), 0);
-  const avoidedInfrastructureCost = estimatedPeakReductionMw * 170000;
-  const programMarketingCost = analyzed.length * 780;
-  const netDominionSavings = avoidedInfrastructureCost - programMarketingCost;
-  const roi = programMarketingCost > 0 ? (netDominionSavings / programMarketingCost) * 100 : 0;
+  const assumptions = DOMINION_SAVINGS_ASSUMPTIONS;
+  const targetedHouseholds = analyzed.length;
+  const baseAdopters = analyzed.reduce((sum, h) => sum + clamp(h.adoption || 0, 0, 1), 0);
+
+  const campaignSegments = buildCampaigns(analyzed);
+  const weightedAdoptionLift = campaignSegments.length
+    ? campaignSegments.reduce((sum, c) => sum + ((c.expectedAdoptionLift || 0) * (c.audienceSize || 0)), 0) / Math.max(targetedHouseholds, 1)
+    : 0;
+
+  const adopters = baseAdopters * (1 + weightedAdoptionLift);
+  const peakLoadReductionKW = adopters * assumptions.averageDERPeakReductionKW;
+  const avoidedInfrastructureCost = peakLoadReductionKW * assumptions.costPerKWOfPeakCapacity;
+  const capacityValueEstimate = peakLoadReductionKW * assumptions.wholesaleCapacityValuePerKW;
+  const marketingCost = targetedHouseholds * assumptions.marketingCostPerHousehold;
+  const programCost = adopters * assumptions.incentivePerAdopter;
+  const subsidyCost = adopters * assumptions.subsidyPerAdopter;
+  const totalCost = marketingCost + programCost;
+  const netSavings = avoidedInfrastructureCost - marketingCost - programCost;
+  const roi = totalCost > 0 ? netSavings / totalCost : 0;
 
   const kpis = [
-    ['Estimated peak load reduction', `${estimatedPeakReductionMw.toFixed(1)} MW`],
-    ['Avoided infrastructure cost', `$${Math.round(avoidedInfrastructureCost).toLocaleString()}`],
-    ['Marketing/program cost', `$${Math.round(programMarketingCost).toLocaleString()}`],
-    ['Net Dominion savings', `$${Math.round(netDominionSavings).toLocaleString()}`],
-    ['Estimated ROI', `${roi.toFixed(1)}%`]
+    ['Estimated peak load reduction (modeled)', `${peakLoadReductionKW.toFixed(0)} kW`],
+    ['Estimated avoided infrastructure cost', `$${Math.round(avoidedInfrastructureCost).toLocaleString()}`],
+    ['Estimated marketing cost', `$${Math.round(marketingCost).toLocaleString()}`],
+    ['Estimated program cost (incentives)', `$${Math.round(programCost).toLocaleString()}`],
+    ['Estimated net Dominion savings', `$${Math.round(netSavings).toLocaleString()}`],
+    ['Estimated ROI (net / total costs)', `${(roi * 100).toFixed(1)}%`]
   ];
 
   dominionSavingsCards.innerHTML = kpis
     .map(([k, v]) => `<div class='card'>${k}<b>${v}</b></div>`)
     .join('');
 
-  dominionSavingsExplanation.textContent = `In this scenario, targeted DER adoption across ${analyzed.length.toLocaleString()} candidate households lowers Dominion's peak demand by about ${estimatedPeakReductionMw.toFixed(1)} MW. Because grid upgrades are often sized for these short-duration peaks, that demand reduction can defer or avoid approximately $${Math.round(avoidedInfrastructureCost).toLocaleString()} in infrastructure spending. After estimated outreach and program delivery costs of $${Math.round(programMarketingCost).toLocaleString()}, Dominion's net savings are about $${Math.round(netDominionSavings).toLocaleString()} (${roi.toFixed(1)}% ROI).`;
+  dominionSavingsExplanation.textContent = `Estimate only: ${targetedHouseholds.toLocaleString()} targeted households yield about ${baseAdopters.toFixed(0)} base adopters, with a campaign-manager lift of ${(weightedAdoptionLift * 100).toFixed(1)}% producing about ${adopters.toFixed(0)} modeled adopters. At ${assumptions.averageDERPeakReductionKW.toFixed(2)} kW average peak reduction per adopter, modeled peak reduction is ${peakLoadReductionKW.toFixed(0)} kW. This implies about $${Math.round(avoidedInfrastructureCost).toLocaleString()} in avoided peak-capacity infrastructure cost (plus about $${Math.round(capacityValueEstimate).toLocaleString()} in wholesale capacity value estimate). Estimated marketing cost is $${Math.round(marketingCost).toLocaleString()} and estimated program incentives are $${Math.round(programCost).toLocaleString()} (optional subsidy estimate: $${Math.round(subsidyCost).toLocaleString()}). Estimated net Dominion savings are $${Math.round(netSavings).toLocaleString()} with estimated ROI of ${(roi * 100).toFixed(1)}%.`;
 }
 
 async function init(){
