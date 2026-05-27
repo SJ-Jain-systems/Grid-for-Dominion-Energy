@@ -1,129 +1,144 @@
-# GRID
+# GRID for Dominion Energy
 
-GRID is a browser-based decision support dashboard for targeting distributed energy resource (DER) programs across Virginia households.
+GRID is a browser-based decision support prototype for Dominion Energy. It helps utility teams identify high-value distributed energy resource (DER) opportunities, diagnose household adoption barriers, design targeted campaigns, and estimate the utility business case behind DER deployment.
 
-## Project status
+Live prototype: [GRID](https://energy-topaz.vercel.app/)
 
-This project has moved beyond a basic recommendation table and now includes:
+## Prototype Report
 
-- A **3-tab experience** for targeting, execution planning, and utility business-case modeling.
-- A **Campaign Manager** with strategy-specific launch planning and export support.
-- A **Dominion Savings** view with scenario-based economics, grid-value framing, and infrastructure cost curve modeling.
-- A **county map + guidance workflow** for county-level initiative planning.
+The accompanying **GRID Prototype Report** frames GRID as a bridge from DER analysis to execution. The report's core thesis is:
 
-## Current application modules
+> GRID should identify high-value DER opportunities, translate them into standardized work packages, and help Dominion compare bids from prequalified contractors using both cost and trust metrics.
 
-### 1) Targeting Explorer tab
+The prototype currently proves the first half of that thesis: household targeting, DER fit, campaign planning, and utility-value modeling. The recommended future direction is a controlled contractor-bidding layer for standardized DER installation and support work. The report is careful to distinguish this from a lowest-bid marketplace for utility infrastructure: GRID should keep Dominion in control by limiting bidding to qualified vendors and judging bids by risk-adjusted value, not price alone.
 
-The Targeting Explorer focuses on household-level prioritization and intervention fit.
+## What GRID Does
 
-- Strategy options:
-  - Maximize Adoption
-  - Maximize Affordability
-  - Maximize Grid Flexibility
-  - Maximize Customer Readiness
-- Filter controls:
-  - County
-  - Income Band
-  - DER Type
-  - Targeting Strategy
-  - Minimum Adoption Score
-  - Outreach Goal
-- Outputs:
-  - KPI summary cards
-  - Ranked table of the **Top 25 target homes**
-  - Household explanation panel with top barrier context
+GRID connects three decisions that are often handled separately:
 
-## 2) Map + Campaign Manager tab
+| Decision | Prototype output |
+| --- | --- |
+| Which households should Dominion prioritize? | Household ranking, DER pathway, and adoption barrier diagnosis |
+| What should Dominion offer? | Campaign message, financing approach, incentive, timing, and intervention |
+| Why does adoption matter to the utility? | Peak reduction, avoided infrastructure cost, VPP value, net savings, and ROI |
+| How could Dominion execute the work? | Future prequalified bidding layer for standardized DER work packages |
 
-This tab supports planning and execution.
+## Current Application Modules
 
-### County DER Initiatives Map
+### Targeting Explorer
 
-- Interactive Virginia county markers.
-- County-level rollups include:
-  - households analyzed
-  - average priority score
-  - average energy burden
-  - dominant DER pathway
-- County-specific initiative guidance appears when a marker is selected.
+The Targeting Explorer ranks Virginia households by strategy-specific priority. Analysts can filter by county, income band, DER type, targeting strategy, minimum adoption score, and outreach goal.
 
-### Campaign Manager
+The ranked household table includes:
 
-- Strategy-aligned campaign objective selector.
-- Campaign KPI cards and recommended intervention cards.
-- Export action for campaign plan artifacts.
-- Strategy profile tuning (adoption, affordability, grid, readiness) is centralized in code for maintainability.
+- Household ID and county
+- Priority score
+- Recommended DER technology
+- Recommended message
+- Financing option and incentive type
+- Contact timing
+- Top adoption barrier and barrier score
+- Dominion offer
 
-## 3) Dominion Savings tab
+Supported strategy modes include:
 
-This executive-facing view frames a scenario-based utility business case (not audited financial reporting):
+- Maximize Adoption
+- Maximize Affordability
+- Maximize Grid Flexibility
+- Maximize Customer Readiness
 
-- Dominion savings KPI cards
-- Modeled results summary and business-case lens
-- DER Revenue and Grid Value section
-- Marketing Efficiency comparison
-- Policy and Subsidy assumptions section
-- Opportunity Cost analysis
-- Infrastructure Cost Curve with selectable models:
-  - Stepwise (default)
-  - Linear
-  - Stress curve (exponential)
+### Map + Campaign Manager
 
-## Scoring algorithm
+The Map + Campaign Manager tab converts household scores into county-level planning and campaign execution guidance.
 
-Each household is transformed into recommendation features and then scored across strategy modes.
+The county map summarizes:
 
-### Core intermediate metrics
+- Households analyzed
+- Average priority score
+- Average energy burden
+- Dominant DER pathway
+- County-specific initiative guidance
 
-For each household, the app calculates:
+The Campaign Manager groups households into actionable campaign segments and recommends interventions based on the selected objective, DER pathway, adoption barrier, and launch timing.
 
-- **Adoption propensity** (`adoption`): combines income normalization, peak load, engagement, EV status, smart thermostat presence, financing acceptance, and solar suitability.
-- **Grid value** (`gridValue`): emphasizes peak demand, outage risk, EV load-shifting potential, and appliance age.
-- **Affordability impact** (`affordability`): based on peak load, energy burden, and inverse-income weighting.
+### Dominion Savings
 
-### Recommended DER pathway
+The Dominion Savings tab extends the prototype from customer targeting into utility economics. It models DER adoption as a potential alternative to some infrastructure buildout by estimating:
 
-Based on household conditions, the app assigns a best-fit pathway and messaging/financing package, including:
+- Peak load reduction
+- Avoided infrastructure cost
+- Incentive and program cost
+- Net Dominion savings
+- Return on investment
+- Virtual power plant value
+- Emergency capacity value
+- Marketing efficiency
+- Subsidy value
+- Opportunity-cost savings
 
-- Smart Thermostat
-- Managed EV Charging
-- Battery + Smart Panel
-- Weatherization Bundle
-- Smart Water Heater
+The view includes selectable infrastructure cost curve assumptions:
 
-Each recommendation is mapped to an assumed incentive cost and implementation framing.
+- Stepwise
+- Linear
+- Stress curve
 
-### Strategy-specific priority scoring
+## Methodology Summary
 
-The app computes strategy priorities such as:
+The report formalizes GRID as an explainable scoring and simulation system rather than a black-box model.
 
-- `adoptionPriority`
-- `gridPriority`
-- `affordabilityPriority`
+### Household Scoring
 
-The ranked household list is sorted by the selected active strategy.
+Each household is transformed into normalized model features and scored across several dimensions:
 
-## Data model
+- **Adoption propensity**: likelihood that a household will adopt a DER offer.
+- **Affordability impact**: expected benefit for households with higher energy burden or lower income.
+- **Grid flexibility**: value from peak reduction, dispatchability, outage risk, and flexible load.
+- **Customer readiness**: near-term ability and willingness to act.
 
-The app loads records from `data/virginia_sample.json` and expects household-level features such as:
+### Barrier Diagnosis
+
+GRID does not only rank households. It also estimates why a household may not convert. Barrier categories include issues such as cost, rebate complexity, trust, readiness, and installation friction. The highest barrier helps determine the recommended message, incentive, financing approach, and intervention.
+
+### Utility Value
+
+The savings model estimates whether targeted DER adoption creates enough peak reduction, reliability value, affordability value, or avoided infrastructure cost to matter for Dominion. These calculations are scenario-driven planning assumptions, not audited financial reporting.
+
+### Future Bid Scoring
+
+The report recommends extending GRID into a procurement layer, sometimes framed as **Dominion Open Bid** or **GRID Bid**. In that future version, GRID would:
+
+- Convert high-value DER or reliability opportunities into standardized work packages.
+- Invite only prequalified contractors to bid.
+- Compare bids using cost, schedule, geography, safety, experience, insurance, and performance history.
+- Flag suspiciously low bids that may create delivery or quality risk.
+- Recommend a risk-adjusted shortlist while preserving Dominion's final award decision.
+- Learn from completed work to improve future vendor evaluation.
+
+## Data Model
+
+The prototype loads household-level data from `data/virginia_sample.json`. Key input fields include:
 
 - `id`, `county`, `income`
-- `peak57`, `energyBurden`, `engagement`
+- `energyBurden`, `peak57`, `outageRisk`
+- `engagement`, `financingAcceptance`
 - `ev`, `smartThermostat`
-- `financingAcceptance`, `solarSuitability`
-- `outageRisk`, `applianceAge`
+- `solarSuitability`, `roofSuitability`
+- `estimatedInstallCost`, `installerCount25mi`
+- `rebateCount`, `autoMatchedRebateCount`
+- `applianceAge`, `homeAge`
 
-These inputs drive recommendation outputs including DER technology, message, financing/incentive approach, outreach timing, and strategy priority scores.
+These inputs drive recommendation outputs such as DER technology, campaign message, financing/incentive approach, outreach timing, barrier diagnosis, and strategy-specific priority scores.
 
-## Repository structure
+## Repository Structure
 
-- `index.html` — tabbed dashboard layout and section scaffolding.
-- `styles.css` — styling for tabs, cards, charts, tables, and map views.
-- `app.js` — scoring logic, filtering, campaign planning logic, and business-case calculations.
-- `data/virginia_sample.json` — sample Virginia household dataset.
+- `index.html` - tabbed dashboard layout and section scaffolding.
+- `styles.css` - styling for tabs, cards, charts, tables, and map views.
+- `app.js` - scoring logic, filtering, campaign planning logic, and business-case calculations.
+- `data/virginia_sample.json` - sample Virginia household dataset.
+- `data/grid_der_adoption_report_open_bidding_less_chatgpt.qmd` - source for the GRID Prototype Report.
+- `data/grid_der_adoption_report_open_bidding_less_chatgpt.pdf` - rendered report artifact.
 
-## Running locally
+## Running Locally
 
 Serve the static app from the repo root:
 
@@ -137,14 +152,17 @@ Then open:
 http://localhost:8000
 ```
 
-## Notes and assumptions
+## Notes and Assumptions
 
-- This is a **decision-support demo** with scenario-driven calculations.
-- Dominion-specific savings and value metrics are modeled assumptions for planning exploration.
+- GRID is a decision-support demo using sample Virginia household data.
+- Dominion-specific savings and value metrics are scenario-based planning assumptions.
 - Outputs should be interpreted as comparative prioritization signals, not final financial guidance.
+- The future bidding concept is limited to standardized, repeatable DER-related work and should remain gated by vendor prequalification, safety standards, and Dominion review.
 
 ## Next Steps
 
 - Add methodology notes for each Dominion Savings KPI directly in the UI.
-- Add CSV export for filtered Top 25 households and county rollups.
-- Add configurable assumptions panel for marketing, incentive, and infrastructure-cost inputs.
+- Add CSV export for filtered household lists and county rollups.
+- Add configurable assumptions for marketing, incentive, infrastructure-cost, and VPP-value inputs.
+- Prototype the controlled contractor-bidding workflow described in the report.
+- Add validation against historical Dominion program data, including adoption, outreach, rebate, and installation outcomes.
