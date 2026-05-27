@@ -143,7 +143,7 @@ http://localhost:8000
 - Dominion-specific savings and value metrics are modeled assumptions for planning exploration.
 - Outputs should be interpreted as comparative prioritization signals, not final financial guidance.
 
-## Suggested next enhancements
+## Next Steps
 
 - Add methodology notes for each Dominion Savings KPI directly in the UI.
 - Add CSV export for filtered Top 25 households and county rollups.
