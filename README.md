@@ -11,7 +11,7 @@ GRID is a browser-based decision support dashboard for targeting distributed ene
 
 ## Scoring algorithm
 
-Each household is transformed into a set of recommendation features and then scored across three strategy modes:
+Each household is transformed into recommendation features and then scored across three strategy modes:
 
 - **Maximize Adoption** (`adoptionPriority`)
 - **Maximize Grid Flexibility** (`gridPriority`)
@@ -106,15 +106,34 @@ Supporting context appears below the KPI row: `Based on X households analyzed`.
   - dominant DER pathway
 - Suggests initiative guidance based on dominant county pathway.
 
+## Repository structure
+
+- `index.html` — dashboard layout and UI structure.
+- `styles.css` — visual styling and responsive behavior.
+- `app.js` — scoring logic, filters, KPIs, and map interactions.
+- `data/virginia_sample.json` — sample household dataset used by the app.
+
 ## Running locally
 
-Because this is a static frontend, you can serve it with any local web server and open `index.html` in your browser.
+Because this is a static frontend, run it with any local web server and open the served URL in your browser.
 
-## Roadmap 
-- Current action plans for the campaign manager takes average via parameter as the estimated cost value, debug, and replace with a specific plan value 
+Example:
+
+```bash
+python3 -m http.server 8000
+```
+
+Then visit:
+
+```text
+http://localhost:8000
+```
+
+## Roadmap
+
+- Replace campaign-manager average cost placeholders with pathway-specific plan values.
   - Average barrier severity
   - Estimated total campaign budget
   - Expected total adoption lift
-- Separate Tab for Map and campaign manager 
-- More on the front end 
-
+- Split Map and Campaign Manager into separate tabs.
+- Continue front-end UX improvements.
