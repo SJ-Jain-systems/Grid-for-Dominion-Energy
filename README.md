@@ -135,8 +135,7 @@ These inputs drive recommendation outputs such as DER technology, campaign messa
 - `styles.css` - styling for tabs, cards, charts, tables, and map views.
 - `app.js` - scoring logic, filtering, campaign planning logic, and business-case calculations.
 - `data/virginia_sample.json` - sample Virginia household dataset.
-- `data/grid_der_adoption_report_open_bidding_less_chatgpt.qmd` - source for the GRID Prototype Report.
-- `data/grid_der_adoption_report_open_bidding_less_chatgpt.pdf` - rendered report artifact.
+- `data/GRID_for_DOMINION_ENERGY` - rendered report artifact.
 
 ## Running Locally
 
